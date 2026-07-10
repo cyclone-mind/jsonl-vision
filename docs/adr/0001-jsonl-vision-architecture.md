@@ -1,0 +1,57 @@
+# 0001: JSONL Vision — fork JSON Crack instead of building a graph engine from scratch
+
+**Status:** Accepted
+**Date:** 2026-07-11
+
+## Context
+
+The pain point: viewing a single line of a `.jsonl` file as nicely-formatted, navigable JSON currently requires copying that line out to a website like [jsoncrack.com](https://jsoncrack.com)/[todiagram.com](https://todiagram.com) and pasting it in. There's already an official open-source [JSON Crack VS Code extension](https://github.com/AykutSarac/jsoncrack-vscode) that renders a whole `.json` file as an interactive node graph — but it operates on the entire document as one blob and has no concept of "one record per line," so it can't be pointed at a single line of a `.jsonl` file. It is also read-only: no field can be edited and written back.
+
+`jsoncrack.com` is a monorepo (Apache-2.0 for the repo as a whole; the `apps/vscode` package specifically is MIT) with a reusable graph-rendering package (`packages/jsoncrack-react`) that renders nodes as SVG `foreignObject`-embedded real DOM (not canvas pixels), and exposes each node's data as a `NodeData` with a `path: JSONPath` — this is what makes value-level editing feasible without touching the layout engine.
+
+The reference visual/interaction target for this project came from screenshots the user shared of jsoncrack.com/todiagram.com and the JSON Crack VS Code extension itself (confirmed via "Powered by JSON Crack" in the webview and via reading `apps/vscode` source) — not from treease.com, which returned HTTP 403 and was never actually inspected. treease.com may or may not use the same engine; that's unconfirmed and irrelevant to this decision.
+
+## Decision
+
+Fork `AykutSarac/jsoncrack.com`, keeping its license/copyright notices intact, and build "JSONL Vision" on top of it rather than writing a graph visualization engine from scratch. The existing codebase already provides the graph layout (ELK via `reaflow`), the webview/panel plumbing, the `editor/title` button contribution point, and a "new panel per invocation" behavior — none of that needs to be reimplemented. What genuinely needs to be built is JSONL-line-awareness and an editing/write-back path, since upstream has neither.
+
+### Sub-decisions
+
+1. **Visualization form**: node graph (inherited from JSON Crack's `foreignObject` + ELK layout), not a simpler collapsible tree — this matches the reference the user actually wants, and reuse makes the heavier form cheap.
+2. **Code reuse**: fork, don't rewrite. The graph engine, layout, webview scaffold, and multi-tab-per-invocation mechanism are already implemented and license-compatible.
+3. **Keep the inherited whole-file-to-graph mode** for plain `.json` files rather than stripping it — it costs nothing to leave in and is a free bonus capability.
+4. **JSONL gap**: add logic to feed the *current line's* text (not the whole document) into the same graph engine, since upstream only ever passes `document.getText()`.
+5. **Trigger**: an `editor/title` button, not an auto-popup on file open. First click activates line-tracking for that file; after that, moving/clicking the cursor to a new line auto-opens a new tab for that line and focuses it — no need to click the button again. Re-visiting a line that already has an open tab focuses the existing tab instead of duplicating it.
+6. **Editing model**: double-click a leaf scalar value to turn it into an inline input, commit on Enter/blur. This was chosen over a raw-JSON-text edit box (the upstream "Node Content" modal is display+copy only — confirmed by reading `NodeModal.tsx`, no `onChange`, no postMessage back to the extension) because editing only a scalar's contents can never produce syntactically invalid JSON mid-edit, unlike editing a serialized subtree as text.
+7. **Write-back timing**: immediate — validate and write the edited line back to the file the moment the edit is committed, not on a separate explicit save action.
+8. **Line anchoring**: tabs are anchored by line number, not by a content fingerprint. If the file is edited elsewhere while a tab is open and the line's content drifts from what the tab has cached, the tab surfaces a "content changed" warning rather than silently writing to the wrong line. Content-based tracking (to survive line insertions/deletions above an open tab) was considered and rejected as premature — JSONL files are typically append-only logs, so the failure mode this would guard against is rare.
+9. **Distribution posture**: self-use only for now (local `.vsix` install, no marketplace publisher registration), but the project is structured to publish-ready standards from day one (proper `package.json` metadata, preserved upstream license/attribution) specifically so a future marketplace release doesn't require restructuring.
+10. **Naming**: "JSONL Vision" — deliberately not reusing "JSON Crack" branding, to avoid implying an official/derivative relationship.
+11. **Format extensibility**: confirmed by reading `packages/jsoncrack-react/src/parser.ts` that the graph engine only ever consumes JSON text — it is decoupled from source format. Multi-format input (YAML/TOML/CSV/XML) in the upstream `apps/www` is a thin conversion layer (`js-yaml`, `json-2-csv`, `fast-xml-parser`) that runs before the JSON hits the engine. This means CSV support later can reuse the per-line architecture built here (CSV is naturally row-oriented), while YAML/TOML support later would reuse the inherited whole-file mode (they're naturally single-document formats, not line-delimited). Neither is being built now.
+12. **Visual style**: rounded cards, warm/pastel per-category coloring, inline color swatches, soft curved connectors — matching the todiagram.com reference the user liked — instead of JSON Crack's default dark, flatter theme.
+
+## Considered alternatives (rejected)
+
+- **Build the graph engine from scratch**: rejected once it was confirmed the upstream engine is open source, license-compatible, and already does the hard parts (ELK layout, path-addressed nodes, webview scaffolding).
+- **Simple collapsible tree instead of a node graph**: considered as a lower-effort first phase, but the user's actual reference (JSON Crack/todiagram) is a node graph, so this was dropped in favor of reusing the existing engine directly.
+- **Editable raw-JSON modal per node** (edit a whole subtree as text): rejected in favor of double-click-per-scalar-value editing, to eliminate the invalid-JSON-mid-edit problem entirely rather than handle it with validation.
+- **Explicit save/apply step for edits**: rejected in favor of immediate write-back, per the user's preference for a what-you-see-is-what's-saved flow.
+- **Content-fingerprint line anchoring**: rejected for now as over-engineering; line-number anchoring plus a drift warning was judged sufficient for typical append-only JSONL usage.
+- **Stripping the inherited whole-file `.json` graph mode**: rejected — keeping it is free, and removing it only trades a hypothetical marketplace-branding concern (avoiding overlap with the official extension) for no immediate benefit while self-use is the goal.
+
+## Consequences
+
+- Upstream's Apache-2.0 (monorepo) / MIT (`apps/vscode`) licenses must be preserved, including copyright notices, in the fork.
+- The new work is concentrated in two places: (a) an "extract current line, not whole document" input path for the extension host side, with line-number-anchored tab/panel tracking and drift detection; (b) an edit layer added to `ObjectNode`/`Row` rendering in `jsoncrack-react` (double-click → input → commit → path-addressed write-back), since none of that exists upstream.
+- Structural editing (add/remove keys or array items), multi-format input, and marketplace publishing are explicitly out of scope for this iteration — each is a separate, additive follow-up that this architecture doesn't block.
+- Because the whole-file `.json` graph mode is retained, JSONL Vision is a superset of the official JSON Crack extension's capability for `.json` files, which may be worth revisiting before any future marketplace release (potential branding/overlap concern noted, not resolved).
+
+## Action Items
+
+1. [ ] Fork `AykutSarac/jsoncrack.com` into this repo (or as a git submodule/vendored copy) preserving `LICENSE.md`/copyright notices.
+2. [ ] Add `.jsonl`/`.ndjson`/`.jsonlines` detection to the `editor/title` menu `when` clause and activation events.
+3. [ ] Implement current-line extraction + line-tracking activation/auto-tab-on-cursor-move in the extension host (`ext-src`).
+4. [ ] Implement line-number-anchored tab management with drift detection.
+5. [ ] Add double-click-to-edit on scalar rows in `ObjectNode.tsx`/`Row`, with a path-addressed commit callback plumbed back through the webview → extension host → document write-back.
+6. [ ] Apply the rounded/warm visual theme in place of the default JSON Crack theme.
+7. [ ] Rename package/display metadata to "JSONL Vision"; keep `package.json` fields publish-ready (placeholder publisher, proper categories/keywords) without registering or publishing.
