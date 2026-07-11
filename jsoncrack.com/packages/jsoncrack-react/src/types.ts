@@ -16,6 +16,14 @@ export interface NodeData {
   path?: JSONPath;
   parentKey?: string;
   parentType?: string;
+  /**
+   * Header label shown in the node's colored band — the key/index this node
+   * sits under in its parent (e.g. `details`, `fruits[0]`). Absent on the root
+   * and on leaf/primitive nodes, which render no header.
+   */
+  label?: string;
+  /** Nesting depth (path length); drives the header's color slot. */
+  depth?: number;
 }
 
 export interface EdgeData {
@@ -43,6 +51,8 @@ export interface NodeRect {
   y: number;
   width: number;
   height: number;
+  /** Y offset (px) where key/value rows start — the header height, or 0 if none. */
+  rowOffsetY: number;
 }
 
 export type LayoutDirection = "LEFT" | "RIGHT" | "DOWN" | "UP";

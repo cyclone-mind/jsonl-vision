@@ -1,5 +1,6 @@
 import React from "react";
 import type { JSONPath } from "jsonc-parser";
+import { HEADER_COLOR_COUNT } from "../layoutConstants";
 import type { NodeData } from "../types";
 import { isPathCollapsed, useCollapseContext } from "./CollapseContext";
 import { EditableValue } from "./EditableValue";
@@ -74,6 +75,21 @@ const Row = ({ row, x, y, index, parentPath }: RowProps) => {
       data-x={x}
       data-y={y + rowPosition}
     >
+      <span className={styles.rowContent}>
+        <span
+          className={styles.key}
+          style={{ color: getTextColor({ type: "object", value: row.value }) }}
+        >
+          {row.key}:{" "}
+        </span>
+        {valuePath ? (
+          <EditableValue path={valuePath} value={row.value} valueType={row.type}>
+            <TextRenderer>{getRowText()}</TextRenderer>
+          </EditableValue>
+        ) : (
+          <TextRenderer>{getRowText()}</TextRenderer>
+        )}
+      </span>
       {isContainer && rowPath && (
         <span
           role="button"
@@ -87,25 +103,13 @@ const Row = ({ row, x, y, index, parentPath }: RowProps) => {
           {collapsed ? "+" : "−"}
         </span>
       )}
-      <span
-        className={styles.key}
-        style={{ color: getTextColor({ type: "object", value: row.value }) }}
-      >
-        {row.key}:{" "}
-      </span>
-      {valuePath ? (
-        <EditableValue path={valuePath} value={row.value} valueType={row.type}>
-          <TextRenderer>{getRowText()}</TextRenderer>
-        </EditableValue>
-      ) : (
-        <TextRenderer>{getRowText()}</TextRenderer>
-      )}
     </span>
   );
 };
 
 const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
   const parentPath = node.path ?? [];
+  const colorSlot = (node.depth ?? 0) % HEADER_COLOR_COUNT;
   return (
     <foreignObject
       className={`${styles.foreignObject} ${styles.objectForeignObject}`}
@@ -115,6 +119,17 @@ const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
       x={0}
       y={0}
     >
+      {node.label != null && (
+        <span
+          className={styles.header}
+          style={{
+            background: `var(--header-bg-${colorSlot})`,
+            color: `var(--header-fg-${colorSlot})`,
+          }}
+        >
+          {node.label}
+        </span>
+      )}
       {node.text.map((row, index) => (
         <Row
           key={`${node.id}-${index}`}

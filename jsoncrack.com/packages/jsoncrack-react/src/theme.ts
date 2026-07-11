@@ -29,6 +29,11 @@ export interface JSONCrackTheme {
   NODE_STROKE: string;
   /** Warm highlight applied on node/edge hover. */
   ACCENT: string;
+  /**
+   * Per-depth header band colors (background + foreground). Nodes pick a slot
+   * by nesting depth so an object-in-an-object reads as a distinct band.
+   */
+  HEADER_COLORS: Array<{ bg: string; fg: string }>;
 }
 
 /**
@@ -63,6 +68,14 @@ export const themes: Record<CanvasThemeMode, JSONCrackTheme> = {
     NODE_FILL: "#2c2622",
     NODE_STROKE: "#463d34",
     ACCENT: "#f0b06a",
+    HEADER_COLORS: [
+      { bg: "#4a2f3c", fg: "#f0b6cf" },
+      { bg: "#4a3a29", fg: "#f0c58a" },
+      { bg: "#38442c", fg: "#bcd69a" },
+      { bg: "#3b3450", fg: "#c7b6ec" },
+      { bg: "#2c4340", fg: "#93cfc7" },
+      { bg: "#45342a", fg: "#e6b596" },
+    ],
   },
   light: {
     NODE_COLORS: {
@@ -89,5 +102,13 @@ export const themes: Record<CanvasThemeMode, JSONCrackTheme> = {
     NODE_FILL: "#fffdf9",
     NODE_STROKE: "#e7dccb",
     ACCENT: "#e0894e",
+    HEADER_COLORS: [
+      { bg: "#f6dfe8", fg: "#9d3f6a" },
+      { bg: "#f7e6cf", fg: "#a6641f" },
+      { bg: "#e6efd6", fg: "#55702f" },
+      { bg: "#e9e2f4", fg: "#6b4c9a" },
+      { bg: "#d9edea", fg: "#2f6f68" },
+      { bg: "#f2e2d7", fg: "#9c5a38" },
+    ],
   },
 };

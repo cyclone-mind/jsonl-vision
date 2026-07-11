@@ -37,7 +37,14 @@ export const buildCanvasStyle = (
   const themeTokens = themes[theme];
   const isDark = theme === "dark";
 
+  const headerVars: Record<string, string> = {};
+  themeTokens.HEADER_COLORS.forEach((color, i) => {
+    headerVars[`--header-bg-${i}`] = color.bg;
+    headerVars[`--header-fg-${i}`] = color.fg;
+  });
+
   return {
+    ...headerVars,
     "--bg-color": themeTokens.GRID_BG_COLOR,
     "--line-color-1": themeTokens.GRID_COLOR_PRIMARY,
     "--line-color-2": themeTokens.GRID_COLOR_SECONDARY,

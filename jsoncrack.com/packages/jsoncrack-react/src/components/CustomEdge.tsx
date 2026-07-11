@@ -76,15 +76,18 @@ const CustomEdgeBase = ({
     const tgtRect = nodePositions.get(props.target);
     if (!srcRect || !tgtRect || fromRowIndex == null) return original;
 
+    // Rows start below the source node's header band; measure from there.
     const startX = srcRect.x + srcRect.width;
-    const rawY = srcRect.y + fromRowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    const rawY = srcRect.y + srcRect.rowOffsetY + fromRowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
     const startY = Math.max(
-      srcRect.y + EDGE_INSET,
+      srcRect.y + srcRect.rowOffsetY + EDGE_INSET,
       Math.min(srcRect.y + srcRect.height - EDGE_INSET, rawY)
     );
 
+    // Land on the target's header band when it has one, else its vertical center.
     const endX = tgtRect.x;
-    const endY = tgtRect.y + tgtRect.height / 2;
+    const endY =
+      tgtRect.rowOffsetY > 0 ? tgtRect.y + tgtRect.rowOffsetY / 2 : tgtRect.y + tgtRect.height / 2;
 
     // A vertical riser placed midway between the two cards gives the classic
     // stepped look; keep at least a short horizontal stub off each node.
@@ -114,6 +117,10 @@ const CustomEdgeBase = ({
       onClick={handleClick}
       onEnter={() => setHovered(true)}
       onLeave={() => setHovered(false)}
+      // The key now lives in the target node's header band, so the connector
+      // itself carries no label (ADR 0001 item 15 / user redesign item 3).
+      label={null as never}
+      labels={[]}
       style={{
         stroke: hovered ? "var(--accent)" : "var(--edge-stroke)",
         strokeWidth: 1.5,

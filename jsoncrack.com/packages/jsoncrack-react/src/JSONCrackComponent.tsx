@@ -33,6 +33,7 @@ import {
   type JsonInput,
 } from "./canvasHelpers";
 import { CollapseContext, isNodeHidden, prunePaths } from "./components/CollapseContext";
+import { HEADER_HEIGHT } from "./layoutConstants";
 import { Controls } from "./components/Controls";
 import { CustomEdge } from "./components/CustomEdge";
 import { CustomNode } from "./components/CustomNode";
@@ -46,8 +47,15 @@ const layoutOptions = {
   "elk.spacing.edgeLabel": "15",
 };
 
-/** Build an id→rect map from an ELK layout's positioned children. */
-const collectNodeRects = (children: unknown): Map<string, NodeRect> => {
+/**
+ * Build an id→rect map from an ELK layout's positioned children. `rowOffsetY`
+ * is the header band height for nodes that render a header (so edge anchoring
+ * measures rows from below the header), looked up via `headerOffsetById`.
+ */
+const collectNodeRects = (
+  children: unknown,
+  headerOffsetById: Map<string, number>
+): Map<string, NodeRect> => {
   const map = new Map<string, NodeRect>();
   if (!Array.isArray(children)) return map;
   for (const child of children) {
@@ -59,7 +67,13 @@ const collectNodeRects = (children: unknown): Map<string, NodeRect> => {
       typeof child.width === "number" &&
       typeof child.height === "number"
     ) {
-      map.set(child.id, { x: child.x, y: child.y, width: child.width, height: child.height });
+      map.set(child.id, {
+        x: child.x,
+        y: child.y,
+        width: child.width,
+        height: child.height,
+        rowOffsetY: headerOffsetById.get(child.id) ?? 0,
+      });
     }
   }
   return map;
@@ -179,6 +193,9 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
     // their start point to the source key's row instead of ELK's evenly-spaced
     // default exit. Keyed by node id.
     const [nodePositions, setNodePositions] = useState<Map<string, NodeRect>>(new Map());
+    // Ref-mirror of nodes so the (deps-free) layout callback can read labels.
+    const nodesRef = useRef<GraphData["nodes"]>([]);
+    nodesRef.current = nodes;
 
     // Ref-mirror consumer callbacks so the parse effect / onCreate callbacks can read the latest without re-running.
     const callbacksRef = useRef({ onParse, onParseError });
@@ -469,8 +486,13 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       layoutSizeRef.current = { width: layout.width, height: layout.height };
       setPaneWidth(layout.width + 50);
       setPaneHeight(layout.height + 50);
-      // Capture positioned node rects so edges can anchor to their source row.
-      setNodePositions(collectNodeRects(layout.children));
+      // Capture positioned node rects so edges can anchor to their source row,
+      // tagging each with its header height so anchoring measures below it.
+      const headerOffsetById = new Map<string, number>();
+      for (const node of nodesRef.current) {
+        if (node.label) headerOffsetById.set(node.id, HEADER_HEIGHT);
+      }
+      setNodePositions(collectNodeRects(layout.children, headerOffsetById));
       setLoading(false);
     }, []);
 

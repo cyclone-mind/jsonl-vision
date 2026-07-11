@@ -15,6 +15,22 @@
   text-align: left;
 }
 
+/* Colored header band: the node's key/index (ADR 0001 item 15). */
+.header {
+  display: block;
+  height: 34px;
+  line-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+  border-top-left-radius: var(--node-radius, 10px);
+  border-top-right-radius: var(--node-radius, 10px);
+}
+
 .key {
   display: inline;
   overflow: hidden;
@@ -26,12 +42,22 @@
   padding: 3px 10px;
   height: 30px;
   line-height: 24px;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   border-bottom: 1px solid var(--node-divider);
   box-sizing: border-box;
+}
+
+/* Key + value share the flexible space; the collapse control sits after them. */
+.rowContent {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .row.collapsed {
@@ -42,6 +68,7 @@
 /* While a row/leaf is being edited it holds an <input>; drop the ellipsis and
    clipping so the input shows in full instead of rendering "…". */
 .row:has(input),
+.rowContent:has(input),
 .key:has(input),
 .textNodeWrapper:has(input) {
   overflow: visible;
@@ -52,10 +79,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   width: 14px;
   height: 14px;
-  margin-right: 6px;
-  margin-top: -2px;
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
@@ -67,7 +93,6 @@
   pointer-events: all;
   cursor: pointer;
   user-select: none;
-  vertical-align: middle;
   transition:
     opacity 120ms ease,
     background 120ms ease;

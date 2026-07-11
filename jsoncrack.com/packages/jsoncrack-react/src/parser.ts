@@ -1,10 +1,30 @@
-import { getNodePath, parseTree, type Node, type ParseError } from "jsonc-parser";
+import { getNodePath, parseTree, type JSONPath, type Node, type ParseError } from "jsonc-parser";
+import { HEADER_HEIGHT } from "./layoutConstants";
 import type { EdgeData, GraphData, NodeData, NodeRow } from "./types";
 import { calculateNodeSize } from "./utils/calculateNodeSize";
 
 export interface ParseGraphResult extends GraphData {
   errors: ParseError[];
 }
+
+/** Extra width reserved for a container row's collapse control (item 11/16). */
+const COLLAPSE_BTN_ALLOWANCE = 26;
+/** Horizontal padding reserved around the header label. */
+const HEADER_PADDING = 24;
+
+/**
+ * Header label for a node: the key it sits under, or `arr[i]` for an array
+ * element. `undefined` for the root (empty path), which renders no header.
+ */
+const buildLabel = (path: JSONPath | undefined): string | undefined => {
+  if (!path || path.length === 0) return undefined;
+  const last = path[path.length - 1];
+  if (typeof last === "number") {
+    const parent = path[path.length - 2];
+    return typeof parent === "string" ? `${parent}[${last}]` : `[${last}]`;
+  }
+  return String(last);
+};
 
 export const parseGraph = (json: string): ParseGraphResult => {
   const parseErrors: ParseError[] = [];
@@ -205,12 +225,30 @@ export const parseGraph = (json: string): ParseGraphResult => {
 
       const { width, height } = calculateNodeSize(displayText);
 
+      const nodePath = getNodePath(node);
+      const label = buildLabel(nodePath);
+
+      // Reserve width for the container-row collapse control so rows like
+      // `nested: {1 keys}` aren't clipped to `…`, and for the header label; add
+      // the header band's height when a label is present.
+      const hasContainerRow = text.some(
+        row => (row.type === "object" || row.type === "array") && (row.childrenCount ?? 0) > 0
+      );
+      let nodeWidth = hasContainerRow ? width + COLLAPSE_BTN_ALLOWANCE : width;
+      let nodeHeight = height;
+      if (label) {
+        nodeWidth = Math.max(nodeWidth, calculateNodeSize(label).width + HEADER_PADDING);
+        nodeHeight += HEADER_HEIGHT;
+      }
+
       nodes.push({
         id,
         text,
-        width,
-        height,
-        path: getNodePath(node),
+        width: nodeWidth,
+        height: nodeHeight,
+        path: nodePath,
+        label,
+        depth: nodePath?.length ?? 0,
         ...appendParentKey(),
       });
     }
