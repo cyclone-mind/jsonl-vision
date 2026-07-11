@@ -1,0 +1,27 @@
+# Agent tooling
+.agents
+.claude
+.codex
+skills-lock.json
+
+# Package manager
+node_modules/
+.npm-cache/
+.pnpm-store/
+.pnp*
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Turborepo
+.turbo/
+
+# Build outputs and caches (all workspaces)
+**/.next/
+**/out/
+**/coverage/
+**/*.tsbuildinfo
+
+# OS
+.DS_Store
