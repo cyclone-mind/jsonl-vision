@@ -107,6 +107,25 @@ describe("parseGraph", () => {
     expect(edgeIds.size).toBe(result.edges.length);
   });
 
+  it("tags each edge with the source row index of its key (for connector anchoring)", () => {
+    // Rows: name(0, scalar), user(1, object), items(2, array).
+    const result = parseGraph('{"name":"x","user":{"a":1},"items":[1,2]}');
+
+    const userEdge = result.edges.find(e => e.text === "user");
+    expect(userEdge?.fromRowIndex).toBe(1);
+
+    const itemsEdges = result.edges.filter(e => e.text === "items");
+    expect(itemsEdges).toHaveLength(2);
+    // Every array-item connector leaves from the single `items` key row.
+    itemsEdges.forEach(edge => expect(edge.fromRowIndex).toBe(2));
+  });
+
+  it("anchors top-level array element edges to the array node's single row (index 0)", () => {
+    const result = parseGraph("[1,2,3]");
+    expect(result.edges).toHaveLength(3);
+    result.edges.forEach(edge => expect(edge.fromRowIndex).toBe(0));
+  });
+
   it("emits edges with from/to pointing at existing node ids", () => {
     const result = parseGraph('{"a":{"b":1},"c":[2,3]}');
     const nodeIds = new Set(result.nodes.map(n => n.id));

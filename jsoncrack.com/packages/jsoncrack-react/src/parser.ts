@@ -28,11 +28,14 @@ export const parseGraph = (json: string): ParseGraphResult => {
     const text: NodeRow[] = [];
 
     if (parentId !== undefined && node.parent?.type === "array") {
+      // The parent is a single-row array container (`[N items]`), so this
+      // element's connector originates from that lone row (index 0).
       edges.push({
         id: String(edgeId++),
         from: parentId,
         to: id,
         text: "",
+        fromRowIndex: 0,
       });
     }
 
@@ -90,12 +93,15 @@ export const parseGraph = (json: string): ParseGraphResult => {
           childrenCount: valueNode.children?.length,
         });
 
+        // All of this array's item connectors leave from this key's row.
+        const arrayRowIndex = text.length - 1;
         targetIds.forEach(targetId => {
           edges.push({
             id: String(edgeId++),
             from: id,
             to: targetId,
             text: key,
+            fromRowIndex: arrayRowIndex,
           });
         });
       } else if (type === "object") {
@@ -109,12 +115,14 @@ export const parseGraph = (json: string): ParseGraphResult => {
           ...(objectNodeId && { to: [objectNodeId] }),
         });
 
+        const objectRowIndex = text.length - 1;
         if (objectNodeId) {
           edges.push({
             id: String(edgeId++),
             from: id,
             to: objectNodeId,
             text: key,
+            fromRowIndex: objectRowIndex,
           });
         }
       } else {

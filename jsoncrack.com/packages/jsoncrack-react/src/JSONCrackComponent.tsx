@@ -38,12 +38,31 @@ import { CustomEdge } from "./components/CustomEdge";
 import { CustomNode } from "./components/CustomNode";
 import type { EditableScalar } from "./components/EditContext";
 import { EditContext } from "./components/EditContext";
-import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData } from "./types";
+import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData, NodeRect } from "./types";
 
 const layoutOptions = {
   "elk.layered.compaction.postCompaction.strategy": "EDGE_LENGTH",
   "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
   "elk.spacing.edgeLabel": "15",
+};
+
+/** Build an id→rect map from an ELK layout's positioned children. */
+const collectNodeRects = (children: unknown): Map<string, NodeRect> => {
+  const map = new Map<string, NodeRect>();
+  if (!Array.isArray(children)) return map;
+  for (const child of children) {
+    if (
+      child &&
+      typeof child.id === "string" &&
+      typeof child.x === "number" &&
+      typeof child.y === "number" &&
+      typeof child.width === "number" &&
+      typeof child.height === "number"
+    ) {
+      map.set(child.id, { x: child.x, y: child.y, width: child.width, height: child.height });
+    }
+  }
+  return map;
 };
 
 /** Imperative handle exposed via the component ref for viewport control. */
@@ -156,6 +175,10 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
     const [paneWidth, setPaneWidth] = useState(2000);
     const [paneHeight, setPaneHeight] = useState(2000);
     const layoutSizeRef = useRef<{ width: number; height: number } | null>(null);
+    // Laid-out node rects captured from each ELK pass, so edges can anchor
+    // their start point to the source key's row instead of ELK's evenly-spaced
+    // default exit. Keyed by node id.
+    const [nodePositions, setNodePositions] = useState<Map<string, NodeRect>>(new Map());
 
     // Ref-mirror consumer callbacks so the parse effect / onCreate callbacks can read the latest without re-running.
     const callbacksRef = useRef({ onParse, onParseError });
@@ -446,6 +469,8 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       layoutSizeRef.current = { width: layout.width, height: layout.height };
       setPaneWidth(layout.width + 50);
       setPaneHeight(layout.height + 50);
+      // Capture positioned node rects so edges can anchor to their source row.
+      setNodePositions(collectNodeRects(layout.children));
       setLoading(false);
     }, []);
 
@@ -560,9 +585,10 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
           viewPort={viewPort}
           edgeTargetById={edgeTargetById}
           hostElement={containerRef.current}
+          nodePositions={nodePositions}
         />
       ),
-      [viewPort, edgeTargetById]
+      [viewPort, edgeTargetById, nodePositions]
     );
 
     const bindLongPress = useLongPress(() => setCanvasDragging(containerRef.current, true), {
