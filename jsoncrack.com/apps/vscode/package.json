@@ -1,30 +1,24 @@
 {
-  "name": "jsoncrack-vscode",
-  "version": "5.1.0",
-  "displayName": "JSON Crack",
-  "description": "Seamlessly visualize your JSON data instantly into graphs.",
-  "publisher": "AykutSarac",
+  "name": "jsonl-vision",
+  "version": "0.1.0",
+  "displayName": "JSONL Vision",
+  "description": "View and edit a single line of a JSONL/NDJSON file as an interactive, warm-themed node graph.",
+  "publisher": "jsonl-vision",
   "license": "MIT",
   "author": {
-    "email": "aykutsarac0@gmail.com",
-    "name": "Aykut Saraç"
-  },
-  "homepage": "https://jsoncrack.com",
-  "icon": "assets/jsoncrack.png",
-  "galleryBanner": {
-    "color": "#202225",
-    "theme": "dark"
+    "name": "JSONL Vision"
   },
   "categories": [
     "Visualization"
   ],
   "keywords": [
+    "jsonl",
+    "ndjson",
+    "jsonlines",
     "json",
     "visualizer",
-    "jsoncrack",
-    "data",
-    "yaml",
-    "livepreview"
+    "graph",
+    "editor"
   ],
   "activationEvents": [
     "workspaceContains:**/*.{json,jsonl,ndjson,jsonlines}"
