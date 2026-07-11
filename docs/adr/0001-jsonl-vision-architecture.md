@@ -51,7 +51,7 @@ Fork `AykutSarac/jsoncrack.com`, keeping its license/copyright notices intact, a
 
 ## Action Items
 
-1. [ ] Fork `AykutSarac/jsoncrack.com` into this repo (or as a git submodule/vendored copy) preserving `LICENSE.md`/copyright notices.
+1. [x] Fork `AykutSarac/jsoncrack.com` into this repo (or as a git submodule/vendored copy) preserving `LICENSE.md`/copyright notices. Done via `git subtree add --prefix=jsoncrack.com` (whole monorepo, squashed, upstream commit `3c9af69e`) rather than a submodule — the extension will be edited in place, and a submodule's two-repo commit dance was judged not worth it. `packages/jsoncrack-react` confirmed Apache-2.0, `apps/vscode` confirmed MIT, both preserved under `jsoncrack.com/`. `apps/www` and `apps/chrome-extension` came along too (kept, not needed, costs nothing) so `git subtree pull --prefix=jsoncrack.com` stays usable for future upstream updates.
 2. [ ] Add `.jsonl`/`.ndjson`/`.jsonlines` detection to the `editor/title` menu `when` clause and activation events.
 3. [ ] Implement current-line extraction + line-tracking activation/auto-tab-on-cursor-move in the extension host (`ext-src`).
 4. [ ] Implement line-number-anchored tab management with drift detection.
