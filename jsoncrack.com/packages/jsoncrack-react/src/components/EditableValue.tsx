@@ -126,6 +126,10 @@ export const EditableValue = ({ path, value, valueType, children }: EditableValu
       ref={inputRef}
       className={invalid ? `${styles.input} ${styles.invalid}` : styles.input}
       value={draft}
+      // Size to content so the input stays roughly as wide as the value it
+      // replaced; without this the browser default (~20 chars) overflows the
+      // fixed-width node and the row renders a text-overflow ellipsis.
+      size={Math.min(Math.max(draft.length + 1, 2), 60)}
       onChange={event => {
         setDraft(event.target.value);
         if (invalid) setInvalid(false);

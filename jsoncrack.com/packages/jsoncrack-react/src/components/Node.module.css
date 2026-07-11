@@ -39,6 +39,15 @@
   opacity: 0.7;
 }
 
+/* While a row/leaf is being edited it holds an <input>; drop the ellipsis and
+   clipping so the input shows in full instead of rendering "…". */
+.row:has(input),
+.key:has(input),
+.textNodeWrapper:has(input) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .collapseButton {
   display: inline-flex;
   align-items: center;
