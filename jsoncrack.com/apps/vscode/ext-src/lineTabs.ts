@@ -35,6 +35,9 @@ export type LineTabsAction =
   | { type: "CLICK_TAB"; line: number }
   // User closed a tab.
   | { type: "CLOSE_TAB"; line: number }
+  // Bulk close relative to a tab (strip order): "left"/"right" close the tabs
+  // before/after it; "others" closes all but it. The target tab always survives.
+  | { type: "CLOSE_TABS"; line: number; scope: "left" | "right" | "others" }
   // The document's text at `line` changed. Focused line auto-syncs; any other
   // open tab whose content diverged from its snapshot flips to a drift warning.
   | { type: "LINE_CHANGED"; line: number; content: string }
@@ -72,6 +75,22 @@ export function reduce(state: LineTabsState, action: LineTabsAction): LineTabsSt
       if (!findTab(state.tabs, action.line)) return state;
       const tabs = state.tabs.filter(t => t.line !== action.line);
       const focusedLine = state.focusedLine === action.line ? null : state.focusedLine;
+      return { tabs, focusedLine };
+    }
+
+    case "CLOSE_TABS": {
+      const idx = state.tabs.findIndex(t => t.line === action.line);
+      if (idx === -1) return state;
+      let tabs: LineTab[];
+      if (action.scope === "left") tabs = state.tabs.slice(idx);
+      else if (action.scope === "right") tabs = state.tabs.slice(0, idx + 1);
+      else tabs = [state.tabs[idx]];
+      if (tabs.length === state.tabs.length) return state;
+      // The kept anchor tab becomes focused if the old focus was closed away.
+      const focusedLine =
+        state.focusedLine !== null && tabs.some(t => t.line === state.focusedLine)
+          ? state.focusedLine
+          : action.line;
       return { tabs, focusedLine };
     }
 

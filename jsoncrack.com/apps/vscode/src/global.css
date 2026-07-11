@@ -111,3 +111,43 @@ a {
   opacity: 1;
   background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.25));
 }
+
+/* Right-click close menu for a pill (ADR item 17). */
+.jsonl-tab-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  background: var(--vscode-menu-background, #252526);
+  color: var(--vscode-menu-foreground, #cccccc);
+  border: 1px solid var(--vscode-menu-border, var(--vscode-editorGroupHeader-tabsBorder, #454545));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
+  font-family: var(--vscode-font-family, "Segoe UI", system-ui, sans-serif);
+  font-size: 12px;
+}
+
+.jsonl-tab-menuitem {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.jsonl-tab-menuitem:hover:not(:disabled) {
+  background: var(--vscode-menu-selectionBackground, #04395e);
+  color: var(--vscode-menu-selectionForeground, #ffffff);
+}
+
+.jsonl-tab-menuitem:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

@@ -127,6 +127,15 @@ class LineTrackingSession {
       case "closeTab":
         this.dispatch({ type: "CLOSE_TAB", line: m.line });
         break;
+      case "closeTabsLeft":
+        this.dispatch({ type: "CLOSE_TABS", line: m.line, scope: "left" });
+        break;
+      case "closeTabsRight":
+        this.dispatch({ type: "CLOSE_TABS", line: m.line, scope: "right" });
+        break;
+      case "closeOtherTabs":
+        this.dispatch({ type: "CLOSE_TABS", line: m.line, scope: "others" });
+        break;
       case "refreshTab":
         this.dispatch({ type: "REFRESH_TAB", line: m.line, content: this.lineText(m.line) });
         break;

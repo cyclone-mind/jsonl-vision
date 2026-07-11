@@ -79,6 +79,18 @@ const App: React.FC = () => {
     getVsCodeApi()?.postMessage({ type: "refreshTab", line });
   }, []);
 
+  const closeTabsLeft = useCallback((line: number) => {
+    getVsCodeApi()?.postMessage({ type: "closeTabsLeft", line });
+  }, []);
+
+  const closeTabsRight = useCallback((line: number) => {
+    getVsCodeApi()?.postMessage({ type: "closeTabsRight", line });
+  }, []);
+
+  const closeOtherTabs = useCallback((line: number) => {
+    getVsCodeApi()?.postMessage({ type: "closeOtherTabs", line });
+  }, []);
+
   const editValue = useCallback(
     (path: (string | number)[], value: string | number | boolean | null) => {
       getVsCodeApi()?.postMessage({ type: "editValue", path, value });
@@ -101,6 +113,9 @@ const App: React.FC = () => {
               onFocus={focusTab}
               onClose={closeTab}
               onRefresh={refreshTab}
+              onCloseLeft={closeTabsLeft}
+              onCloseRight={closeTabsRight}
+              onCloseOthers={closeOtherTabs}
             />
           )}
           <Box style={{ position: "relative", flex: 1, minHeight: 0 }}>
