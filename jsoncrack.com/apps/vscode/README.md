@@ -1,24 +1,38 @@
-  <img src="https://github.com/AykutSarac/jsoncrack-vscode/assets/47941171/23b26537-7c4a-4029-af78-456dea0d0b04" width="300" alt="JSON Crack" />
+# JSONL Vision
 
-<hr />
+A Visual Studio Code extension for reading and editing **JSONL / NDJSON** files one
+line at a time. Point it at a line of a `.jsonl` file and that single record opens as
+an interactive, warm-themed node graph — objects, arrays, and values rendered as a
+connected diagram. Moving the cursor to another line opens a new tab for that line;
+double-click a scalar value to edit it and the change is written straight back to the
+file.
 
-[JSON Crack](https://jsoncrack.com?utm_source=jsoncrack-vscode&utm_medium=readme)'s Official Visual Studio Code Extension that visualizes JSON data as an interactive diagram. The extension parses the open JSON file and displays its structure as a connected graph where nodes represent objects, arrays, and values.
+Plain `.json` files still open in the inherited whole-document graph mode.
 
-## How to use?
+## How to use
 
-1. Install the JSON Crack extension from the [VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=AykutSarac.jsoncrack-vscode).
-2. Open a JSON file.
-3. Click on the JSON Crack icon in the menubar at top right.
-
-<img width="600" alt="image" src="https://github.com/AykutSarac/jsoncrack-vscode/assets/47941171/06715ac1-2403-402f-b3fa-3d91e1c9196a">
+1. Build and install the extension locally (see [Development](#development)) — this
+   extension is currently self-use only and is not published to the marketplace.
+2. Open a `.jsonl`, `.ndjson`, or `.jsonlines` file (or a plain `.json` file).
+3. Click the **JSONL Vision** icon in the editor title bar (top right).
+4. Move the cursor between lines to open a tab per line; double-click a value to edit it.
 
 ## Privacy
 
-The extension works **fully offline**. No data is sent to any server. All JSON parsing and visualization happens locally in your editor.
+The extension works **fully offline**. No data is sent to any server. All parsing,
+visualization, and write-back happen locally in your editor.
+
+## Credits
+
+JSONL Vision is built on the open-source graph engine from
+[JSON Crack](https://jsoncrack.com) (`packages/jsoncrack-react`, Apache-2.0) and its
+VS Code extension scaffold (`apps/vscode`, MIT). Those upstream license and copyright
+notices are preserved. JSONL Vision is an independent project and is not affiliated
+with or endorsed by JSON Crack.
 
 ## Development
 
-This extension lives in `apps/vscode` inside the [jsoncrack.com](https://github.com/AykutSarac/jsoncrack.com) monorepo.
+This extension lives in `apps/vscode` inside the vendored `jsoncrack.com` monorepo.
 
 **Prerequisites:** Node.js `>=20`, pnpm `>=10`
 

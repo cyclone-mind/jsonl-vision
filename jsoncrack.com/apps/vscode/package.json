@@ -27,8 +27,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "jsoncrack-vscode.start",
-        "title": "Enable JSON Crack visualization",
+        "command": "jsonl-vision.start",
+        "title": "Enable JSONL Vision",
         "category": "menubar",
         "icon": {
           "light": "./assets/icon-light.svg",
@@ -36,33 +36,33 @@
         }
       },
       {
-        "command": "jsoncrack-vscode.start.specific",
-        "title": "Enable JSON Crack visualization for specific file",
+        "command": "jsonl-vision.start.specific",
+        "title": "Enable JSONL Vision for specific file",
         "category": "menubar"
       },
       {
-        "command": "jsoncrack-vscode.start.selected",
-        "title": "Open with JSON Crack",
+        "command": "jsonl-vision.start.selected",
+        "title": "Open with JSONL Vision",
         "category": "Navigation"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "jsoncrack-vscode.start.selected",
+          "command": "jsonl-vision.start.selected",
           "when": "editorHasSelection",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "jsoncrack-vscode.start",
+          "command": "jsonl-vision.start",
           "when": "never"
         }
       ],
       "editor/title": [
         {
-          "command": "jsoncrack-vscode.start",
+          "command": "jsonl-vision.start",
           "when": "resourceExtname == .json || resourceExtname == .jsonl || resourceExtname == .ndjson || resourceExtname == .jsonlines || editorLangId == json || editorLangId == jsonl",
           "group": "navigation"
         }
@@ -110,13 +110,6 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shiki": "^4.0.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/AykutSarac/jsoncrack.com"
-  },
-  "bugs": {
-    "url": "https://github.com/AykutSarac/jsoncrack.com/issues"
   },
   "engines": {
     "vscode": "^1.100.0"

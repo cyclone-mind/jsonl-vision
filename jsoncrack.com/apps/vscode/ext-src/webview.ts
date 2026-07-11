@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 
-export function createWebviewPanel(context: vscode.ExtensionContext, title = "JSON Crack") {
+export function createWebviewPanel(context: vscode.ExtensionContext, title = "JSONL Vision") {
   const extPath = context.extensionPath;
   const webviewDir = vscode.Uri.file(path.join(extPath, "build", "webview"));
 
@@ -15,7 +15,6 @@ export function createWebviewPanel(context: vscode.ExtensionContext, title = "JS
       localResourceRoots: [webviewDir, vscode.Uri.file(path.join(extPath, "assets"))],
     }
   );
-  panel.iconPath = vscode.Uri.file(path.join(extPath, "assets", "jsoncrack.png"));
 
   const scriptUri = panel.webview.asWebviewUri(
     vscode.Uri.file(path.join(extPath, "build", "webview", "index.js"))

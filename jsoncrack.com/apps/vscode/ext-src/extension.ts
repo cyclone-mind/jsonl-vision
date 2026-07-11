@@ -4,15 +4,15 @@ import { isJsonlDocument, startLineTracking } from "./lineTracking";
 import { createWebviewPanel } from "./webview";
 
 function getPanelTitle(document?: vscode.TextDocument) {
-  if (!document) return "JSON Crack";
+  if (!document) return "JSONL Vision";
 
   const fileName = path.basename(document.fileName);
-  return fileName || "JSON Crack";
+  return fileName || "JSONL Vision";
 }
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    vscode.commands.registerCommand("jsoncrack-vscode.start", () => {
+    vscode.commands.registerCommand("jsonl-vision.start", () => {
       const editor = vscode.window.activeTextEditor;
       if (editor && isJsonlDocument(editor.document)) {
         // JSONL files use the per-line flow; plain .json keeps whole-document mode.
@@ -21,10 +21,10 @@ export function activate(context: vscode.ExtensionContext) {
         createWebviewForActiveEditor(context);
       }
     }),
-    vscode.commands.registerCommand("jsoncrack-vscode.start.specific", (content?: string) =>
+    vscode.commands.registerCommand("jsonl-vision.start.specific", (content?: string) =>
       createWebviewForContent(context, content)
     ),
-    vscode.commands.registerCommand("jsoncrack-vscode.start.selected", () =>
+    vscode.commands.registerCommand("jsonl-vision.start.selected", () =>
       createWebviewForSelectedText(context)
     )
   );
