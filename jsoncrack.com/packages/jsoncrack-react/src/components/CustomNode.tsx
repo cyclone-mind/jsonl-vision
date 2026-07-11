@@ -9,6 +9,9 @@ type CustomNodeProps = NodeProps<NodeData> & {
   onNodeClick?: (node: NodeData) => void;
 };
 
+/** Rounded-card corner radius (ADR 0001 item 12); kept in sync with `--node-radius`. */
+const NODE_CORNER_RADIUS = 10;
+
 const CustomNodeBase = ({ onNodeClick, ...nodeProps }: CustomNodeProps) => {
   const handleNodeClick = React.useCallback(
     (_: React.MouseEvent<SVGGElement, MouseEvent>, data: NodeData) => {
@@ -23,8 +26,10 @@ const CustomNodeBase = ({ onNodeClick, ...nodeProps }: CustomNodeProps) => {
       onClick={handleNodeClick as any}
       animated={false}
       label={null as any}
+      rx={NODE_CORNER_RADIUS}
+      ry={NODE_CORNER_RADIUS}
       onEnter={event => {
-        event.currentTarget.style.stroke = "#3B82F6";
+        event.currentTarget.style.stroke = "var(--accent)";
       }}
       onLeave={event => {
         event.currentTarget.style.stroke = "var(--node-stroke)";

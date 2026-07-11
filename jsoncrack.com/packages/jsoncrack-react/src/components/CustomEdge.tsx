@@ -56,7 +56,7 @@ const CustomEdgeBase = ({ viewPort, edgeTargetById, hostElement, ...props }: Cus
       onEnter={() => setHovered(true)}
       onLeave={() => setHovered(false)}
       style={{
-        stroke: hovered ? "#3B82F6" : "var(--edge-stroke)",
+        stroke: hovered ? "var(--accent)" : "var(--edge-stroke)",
         strokeWidth: 1.5,
       }}
       {...props}

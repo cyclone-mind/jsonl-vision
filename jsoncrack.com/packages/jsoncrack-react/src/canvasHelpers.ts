@@ -41,9 +41,13 @@ export const buildCanvasStyle = (
     "--bg-color": themeTokens.GRID_BG_COLOR,
     "--line-color-1": themeTokens.GRID_COLOR_PRIMARY,
     "--line-color-2": themeTokens.GRID_COLOR_SECONDARY,
-    "--edge-stroke": isDark ? "#444444" : "#BCBEC0",
-    "--node-fill": isDark ? "#292929" : "#ffffff",
-    "--node-stroke": isDark ? "#424242" : "#BCBEC0",
+    "--edge-stroke": themeTokens.EDGE_STROKE,
+    "--node-fill": themeTokens.NODE_FILL,
+    "--node-stroke": themeTokens.NODE_STROKE,
+    "--accent": themeTokens.ACCENT,
+    // Rounded-card corner radius (ADR 0001 item 12). Consumed by the SVG node
+    // rect (via CustomNode) and the foreignObject clip in Node.module.css.
+    "--node-radius": "10px",
     "--interactive-normal": themeTokens.INTERACTIVE_NORMAL,
     "--background-node": themeTokens.BACKGROUND_NODE,
     "--node-text": themeTokens.NODE_COLORS.TEXT,
