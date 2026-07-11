@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Anchor, Box, MantineProvider, Text } from "@mantine/core";
+import { Box, MantineProvider } from "@mantine/core";
 import { CodeHighlightAdapterProvider, createShikiAdapter } from "@mantine/code-highlight";
 import type { NodeData } from "jsoncrack-react";
 import { JSONCrack } from "jsoncrack-react";
@@ -111,19 +111,6 @@ const App: React.FC = () => {
               onNodeClick={handleNodeClick}
               onEditValue={editingEnabled ? editValue : undefined}
             />
-            <Anchor
-              pos="fixed"
-              bottom={0}
-              left={0}
-              href="https://jsoncrack.com/editor?utm_source=vscode&utm_campaign=attribute"
-              target="_blank"
-            >
-              <Box px="12" py="4" bg="dark">
-                <Text fz="sm" c="white">
-                  Powered by JSON Crack
-                </Text>
-              </Box>
-            </Anchor>
           </Box>
           {selectedNode && (
             <NodeModal opened={!!selectedNode} onClose={closeNodeModal} nodeData={selectedNode} />
