@@ -79,6 +79,17 @@ const App: React.FC = () => {
     getVsCodeApi()?.postMessage({ type: "refreshTab", line });
   }, []);
 
+  const editValue = useCallback(
+    (path: (string | number)[], value: string | number | boolean | null) => {
+      getVsCodeApi()?.postMessage({ type: "editValue", path, value });
+    },
+    []
+  );
+
+  // Inline editing is only wired up in JSONL line-tracking mode (the host only
+  // handles editValue there); plain .json stays read-only.
+  const editingEnabled = tabs.length > 0;
+
   return (
     <MantineProvider forceColorScheme={theme}>
       <CodeHighlightAdapterProvider adapter={shikiAdapter}>
@@ -98,6 +109,7 @@ const App: React.FC = () => {
               theme={theme}
               showControls={false}
               onNodeClick={handleNodeClick}
+              onEditValue={editingEnabled ? editValue : undefined}
             />
             <Anchor
               pos="fixed"

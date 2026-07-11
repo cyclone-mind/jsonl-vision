@@ -1,5 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import type { PathSegment, Scalar } from "./applyEdit";
+import { applyScalarEdit } from "./applyEdit";
 import type { LineTabsAction, LineTabsState } from "./lineTabs";
 import { createState, reduce } from "./lineTabs";
 import { createWebviewPanel } from "./webview";
@@ -102,7 +104,21 @@ class LineTrackingSession {
       return;
     }
     if (!msg || typeof msg !== "object") return;
-    const m = msg as { type?: string; line?: number };
+    const m = msg as {
+      type?: string;
+      line?: number;
+      path?: PathSegment[];
+      value?: Scalar;
+    };
+
+    // A scalar edit targets the focused line, not a tab id.
+    if (m.type === "editValue") {
+      if (this.state.focusedLine !== null && Array.isArray(m.path)) {
+        void this.applyEdit(this.state.focusedLine, m.path, m.value ?? null);
+      }
+      return;
+    }
+
     if (typeof m.line !== "number") return;
     switch (m.type) {
       case "clickTab":
@@ -115,6 +131,19 @@ class LineTrackingSession {
         this.dispatch({ type: "REFRESH_TAB", line: m.line, content: this.lineText(m.line) });
         break;
     }
+  }
+
+  /** Apply a committed scalar edit to a line and write it straight back (ADR items 5-7). */
+  private async applyEdit(line: number, editPath: PathSegment[], value: Scalar) {
+    const original = this.lineText(line);
+    const result = applyScalarEdit(original, editPath, value);
+    if (!result.ok || result.text === original) return;
+
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(this.document.uri, this.document.lineAt(line).range, result.text);
+    await vscode.workspace.applyEdit(edit);
+    // The resulting onDidChangeTextDocument reconcile re-syncs the focused tab's
+    // snapshot and re-posts the graph, so no extra dispatch is needed here.
   }
 
   /** After any document edit, re-check every open tab's line for drift (or live-sync). */

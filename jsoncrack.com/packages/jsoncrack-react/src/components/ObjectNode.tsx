@@ -2,6 +2,7 @@ import React from "react";
 import type { JSONPath } from "jsonc-parser";
 import type { NodeData } from "../types";
 import { isPathCollapsed, useCollapseContext } from "./CollapseContext";
+import { EditableValue } from "./EditableValue";
 import styles from "./Node.module.css";
 import { TextRenderer } from "./TextRenderer";
 import { getTextColor } from "./nodeStyles";
@@ -31,6 +32,14 @@ const Row = ({ row, x, y, index, parentPath }: RowProps) => {
   const rowPath: JSONPath | null = React.useMemo(
     () => (isContainer && row.key != null ? [...parentPath, row.key] : null),
     [isContainer, parentPath, row.key]
+  );
+
+  // A scalar leaf (not an object/array container) with a key is editable; its
+  // value lives at parentPath + key within the rendered document.
+  const isScalar = row.type !== "object" && row.type !== "array";
+  const valuePath: JSONPath | null = React.useMemo(
+    () => (isScalar && row.key != null ? [...parentPath, row.key] : null),
+    [isScalar, parentPath, row.key]
   );
   const collapsed = rowPath != null && isPathCollapsed(collapsedSet, rowPath);
 
@@ -84,7 +93,13 @@ const Row = ({ row, x, y, index, parentPath }: RowProps) => {
       >
         {row.key}:{" "}
       </span>
-      <TextRenderer>{getRowText()}</TextRenderer>
+      {valuePath ? (
+        <EditableValue path={valuePath} value={row.value} valueType={row.type}>
+          <TextRenderer>{getRowText()}</TextRenderer>
+        </EditableValue>
+      ) : (
+        <TextRenderer>{getRowText()}</TextRenderer>
+      )}
     </span>
   );
 };

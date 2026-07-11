@@ -1,5 +1,6 @@
 import React from "react";
 import type { NodeData } from "../types";
+import { EditableValue } from "./EditableValue";
 import styles from "./Node.module.css";
 import { TextRenderer } from "./TextRenderer";
 import { getTextColor } from "./nodeStyles";
@@ -18,6 +19,11 @@ const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
 
   const value = firstRow.value;
 
+  // Primitive leaves (including array items like ["stack", 0]) are editable;
+  // the array/object summary nodes ("[N items]" / "{0 keys}") are not.
+  const isScalar = firstRow.type !== "object" && firstRow.type !== "array";
+  const canEdit = isScalar && node.path != null;
+
   return (
     <foreignObject
       className={styles.foreignObject}
@@ -34,7 +40,13 @@ const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
         data-key={JSON.stringify(text)}
       >
         <span className={styles.key} style={{ color: getTextColor({ value, type: typeof value }) }}>
-          <TextRenderer>{value}</TextRenderer>
+          {canEdit ? (
+            <EditableValue path={node.path!} value={value} valueType={firstRow.type}>
+              <TextRenderer>{value}</TextRenderer>
+            </EditableValue>
+          ) : (
+            <TextRenderer>{value}</TextRenderer>
+          )}
         </span>
       </span>
     </foreignObject>

@@ -1,0 +1,38 @@
+/* The foreignObject that hosts node text is `pointer-events: none`; these
+   re-enable interaction on just the editable value (mirroring the collapse
+   button), so double-click reaches the value while the rest of the node still
+   forwards clicks to reaflow. */
+
+.editable {
+  pointer-events: all;
+  cursor: text;
+  border-radius: 3px;
+  padding: 0 2px;
+  transition: background 100ms ease;
+}
+
+.editable:hover {
+  background: var(--node-divider);
+  box-shadow: inset 0 0 0 1px var(--interactive-normal);
+}
+
+.input {
+  pointer-events: all;
+  font: inherit;
+  color: inherit;
+  background: var(--node-fill, #ffffff);
+  border: 1px solid #3b82f6;
+  border-radius: 3px;
+  padding: 0 4px;
+  margin: 0;
+  min-width: 32px;
+  max-width: 260px;
+  height: 20px;
+  vertical-align: middle;
+  outline: none;
+}
+
+.invalid {
+  border-color: #e2483f;
+  box-shadow: 0 0 0 1px rgba(226, 72, 63, 0.4);
+}

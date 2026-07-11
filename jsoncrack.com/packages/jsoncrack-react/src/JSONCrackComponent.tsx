@@ -36,6 +36,8 @@ import { CollapseContext, isNodeHidden, prunePaths } from "./components/Collapse
 import { Controls } from "./components/Controls";
 import { CustomEdge } from "./components/CustomEdge";
 import { CustomNode } from "./components/CustomNode";
+import type { EditableScalar } from "./components/EditContext";
+import { EditContext } from "./components/EditContext";
 import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData } from "./types";
 
 const layoutOptions = {
@@ -109,6 +111,12 @@ export interface JSONCrackProps {
   onToggleCollapse?: (path: JSONPath) => void;
   /** Observe the internal collapsed-paths set (uncontrolled mode). */
   onCollapseChange?: (collapsedPaths: string[]) => void;
+  /**
+   * Enables inline editing of scalar leaves. Called with the value's JSONPath
+   * and the committed value (coerced to the row's original scalar type). When
+   * omitted the graph is read-only, matching upstream JSON Crack.
+   */
+  onEditValue?: (path: JSONPath, newValue: EditableScalar) => void;
 }
 
 /** Interactive JSON-to-graph visualization. Forwards a `JSONCrackRef` for imperative viewport control. */
@@ -133,6 +141,7 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       collapsedPaths: controlledCollapsedPaths,
       onToggleCollapse: controlledOnToggle,
       onCollapseChange,
+      onEditValue,
     },
     ref
   ) => {
@@ -359,6 +368,11 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
     const collapseContextValue = useMemo(
       () => ({ collapsedSet, onToggleCollapse: wrappedToggleCollapse }),
       [collapsedSet, wrappedToggleCollapse]
+    );
+
+    const editContextValue = useMemo<{ onEditValue?: JSONCrackProps["onEditValue"] }>(
+      () => ({ onEditValue }),
+      [onEditValue]
     );
 
     const collapsedPathsRef = useRef(collapsedPaths);
@@ -607,33 +621,35 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
           }}
         >
           <CollapseContext.Provider value={collapseContextValue}>
-            <Canvas
-              className="jsoncrack-canvas"
-              onLayoutChange={onLayoutChange}
-              node={renderNode}
-              edge={renderEdge}
-              nodes={visibleNodes}
-              edges={visibleEdges}
-              arrow={null}
-              maxHeight={paneHeight}
-              maxWidth={paneWidth}
-              height={paneHeight}
-              width={paneWidth}
-              direction={layoutDirection}
-              layoutOptions={layoutOptions}
-              key={layoutDirection}
-              pannable={false}
-              zoomable={false}
-              animated={false}
-              readonly
-              dragEdge={null}
-              dragNode={null}
-              // Disable reaflow's built-in auto-centering of content inside the
-              // pane. Passing a nullish `defaultPosition` makes reaflow leave
-              // the group at the svg origin so our fit-to-viewport rect math
-              // matches reality.
-              defaultPosition={null as unknown as undefined}
-            />
+            <EditContext.Provider value={editContextValue}>
+              <Canvas
+                className="jsoncrack-canvas"
+                onLayoutChange={onLayoutChange}
+                node={renderNode}
+                edge={renderEdge}
+                nodes={visibleNodes}
+                edges={visibleEdges}
+                arrow={null}
+                maxHeight={paneHeight}
+                maxWidth={paneWidth}
+                height={paneHeight}
+                width={paneWidth}
+                direction={layoutDirection}
+                layoutOptions={layoutOptions}
+                key={layoutDirection}
+                pannable={false}
+                zoomable={false}
+                animated={false}
+                readonly
+                dragEdge={null}
+                dragNode={null}
+                // Disable reaflow's built-in auto-centering of content inside the
+                // pane. Passing a nullish `defaultPosition` makes reaflow leave
+                // the group at the svg origin so our fit-to-viewport rect math
+                // matches reality.
+                defaultPosition={null as unknown as undefined}
+              />
+            </EditContext.Provider>
           </CollapseContext.Provider>
         </Space>
       </div>
