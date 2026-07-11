@@ -29,6 +29,7 @@ Fork `AykutSarac/jsoncrack.com`, keeping its license/copyright notices intact, a
 10. **Naming**: "JSONL Vision" — deliberately not reusing "JSON Crack" branding, to avoid implying an official/derivative relationship.
 11. **Format extensibility**: confirmed by reading `packages/jsoncrack-react/src/parser.ts` that the graph engine only ever consumes JSON text — it is decoupled from source format. Multi-format input (YAML/TOML/CSV/XML) in the upstream `apps/www` is a thin conversion layer (`js-yaml`, `json-2-csv`, `fast-xml-parser`) that runs before the JSON hits the engine. This means CSV support later can reuse the per-line architecture built here (CSV is naturally row-oriented), while YAML/TOML support later would reuse the inherited whole-file mode (they're naturally single-document formats, not line-delimited). Neither is being built now.
 12. **Visual style**: rounded cards, warm/pastel per-category coloring, inline color swatches, soft curved connectors — matching the todiagram.com reference the user liked — instead of JSON Crack's default dark, flatter theme.
+13. **Tab layout inside the webview**: each open line's tab (per item 5) is a custom horizontal pill-tab strip drawn inside a single per-file "JSONL Vision" webview panel — not separate native VS Code editor tabs (one real editor tab per open line), and not a vertical line-rail sidebar. Chosen after comparing all three as a throwaway UI prototype (`prototype/tab-layout-ui/`, captured on git branch `prototype/tab-layout-ui`) mocked inside a fake VS Code shell so the options were judged in context. It keeps the drift-warning treatment (item 8) and the warm/pastel visual identity (item 12) fully under our control — native VS Code tab chrome only offers a plain dot for the drift indicator and carries none of the custom styling — while a horizontal strip matches the todiagram-style tabbed-document feel already chosen as the reference, without opening N separate real editor tabs that would crowd the user's own VS Code tab strip.
 
 ## Considered alternatives (rejected)
 
@@ -38,6 +39,8 @@ Fork `AykutSarac/jsoncrack.com`, keeping its license/copyright notices intact, a
 - **Explicit save/apply step for edits**: rejected in favor of immediate write-back, per the user's preference for a what-you-see-is-what's-saved flow.
 - **Content-fingerprint line anchoring**: rejected for now as over-engineering; line-number anchoring plus a drift warning was judged sufficient for typical append-only JSONL usage.
 - **Stripping the inherited whole-file `.json` graph mode**: rejected — keeping it is free, and removing it only trades a hypothetical marketplace-branding concern (avoiding overlap with the official extension) for no immediate benefit while self-use is the goal.
+- **Native per-line VS Code editor tabs** (one real editor tab per open line): rejected — would crowd the user's own tab strip with generated tabs, and constrains the drift-warning indicator to whatever VS Code's native tab-dot decoration allows, with no room for the item 12 visual identity.
+- **Vertical line-rail sidebar inside one panel**: rejected — denser and reasonable for many open lines at once, but a horizontal pill strip reads more like the idiomatic tabbed-document feel of the todiagram.com reference, and doesn't compete with the graph canvas for horizontal width the way a persistent left rail does.
 
 ## Consequences
 
@@ -55,3 +58,4 @@ Fork `AykutSarac/jsoncrack.com`, keeping its license/copyright notices intact, a
 5. [ ] Add double-click-to-edit on scalar rows in `ObjectNode.tsx`/`Row`, with a path-addressed commit callback plumbed back through the webview → extension host → document write-back.
 6. [ ] Apply the rounded/warm visual theme in place of the default JSON Crack theme.
 7. [ ] Rename package/display metadata to "JSONL Vision"; keep `package.json` fields publish-ready (placeholder publisher, proper categories/keywords) without registering or publishing.
+8. [ ] Implement the per-file tab strip as horizontal pill tabs inside one webview panel (per item 13), not native per-line editor tabs and not a vertical rail.
