@@ -22,6 +22,12 @@ const ROW_HEIGHT = 30;
 const EDGE_INSET = 6;
 /** Minimum horizontal stub off each card before the vertical riser. */
 const MIN_STUB = 14;
+/**
+ * Distance from a source card's right edge to the shared vertical riser. Fixed
+ * (not each edge's own midpoint) so every connector leaving a node forks at the
+ * same x — otherwise targets at different x-positions scatter the risers.
+ */
+const FORK_GAP = 36;
 
 const isQueryRoot = (value: unknown): value is QueryRoot => {
   return (
@@ -89,9 +95,10 @@ const CustomEdgeBase = ({
     const endY =
       tgtRect.rowOffsetY > 0 ? tgtRect.y + tgtRect.rowOffsetY / 2 : tgtRect.y + tgtRect.height / 2;
 
-    // A vertical riser placed midway between the two cards gives the classic
-    // stepped look; keep at least a short horizontal stub off each node.
-    const midX = startX + Math.max(MIN_STUB, (endX - startX) / 2);
+    // Shared vertical riser a fixed gap right of the source, so all connectors
+    // leaving this node branch from the same x. Clamped to stay in the gap
+    // between the two cards when a target sits unusually close.
+    const trunkX = Math.max(startX + MIN_STUB, Math.min(startX + FORK_GAP, endX - MIN_STUB));
 
     // reaflow types `bendPoints` as a single point but spreads it as an array
     // at runtime (`...sections[0].bendPoints`), so pass an array and cast.
@@ -100,8 +107,8 @@ const CustomEdgeBase = ({
         id: original?.[0]?.id,
         startPoint: { x: startX, y: startY },
         bendPoints: [
-          { x: midX, y: startY },
-          { x: midX, y: endY },
+          { x: trunkX, y: startY },
+          { x: trunkX, y: endY },
         ],
         endPoint: { x: endX, y: endY },
       },
