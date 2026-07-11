@@ -68,7 +68,7 @@ Fork `AykutSarac/jsoncrack.com`, keeping its license/copyright notices intact, a
 ### Follow-up refinements (todiagram-style polish, per sub-decisions 14–17)
 
 9. [x] Anchor each connector to its source key's row instead of ELK's evenly-distributed exit points. Done: `parser.ts` tags each edge with `fromRowIndex`; `JSONCrackComponent` captures laid-out node rects per ELK pass; `CustomEdge` overrides the connector start point to that key row's center. Verified live across object/array/nested paths; 54 unit tests.
-10. [ ] Orthogonal right-angle connectors (sub-decision 14): replace the curved edge with an H→V→H elbow path computed from the source-row anchor to the target node, and drop reaflow's curved interpolation.
+10. [x] Orthogonal right-angle connectors (sub-decision 14): replace the curved edge with an H→V→H elbow path computed from the source-row anchor to the target node, and drop reaflow's curved interpolation. Done in `CustomEdge.tsx`: builds sections `startPoint → [{midX,startY},{midX,endY}] → endPoint` (mid-riser between the cards) with `interpolation="linear"`, using both source and target rects from `nodePositions`. Verified live (stepped elbows; straight horizontal when source/target share a row).
 11. [ ] Fix node-width truncation (sub-decision 16): reserve width for the collapse control + header so container rows like `nested: {1 keys}` are not clipped to `…`.
 12. [ ] Colored node headers (sub-decisions 15/4): render each non-root node's key/index as a depth-tinted header band, and remove the per-edge key labels.
 13. [ ] Object/array collapse control on the container row (right-aligned), preserved under the header redesign (user item 5).

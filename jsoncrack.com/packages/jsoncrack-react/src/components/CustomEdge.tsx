@@ -20,6 +20,8 @@ type CustomEdgeProps = EdgeProps & {
 const ROW_HEIGHT = 30;
 /** Keep the anchor this far inside the card's top/bottom edges. */
 const EDGE_INSET = 6;
+/** Minimum horizontal stub off each card before the vertical riser. */
+const MIN_STUB = 14;
 
 const isQueryRoot = (value: unknown): value is QueryRoot => {
   return (
@@ -63,31 +65,51 @@ const CustomEdgeBase = ({
     }
   }, [hostElement, edgeId, edgeTargetById, viewPort]);
 
-  // Re-anchor the connector's start point to the vertical center of the source
-  // key's row. ELK otherwise distributes edge exits evenly along the node's
-  // right side, so a line for `profile:` wouldn't leave from the profile row.
+  // Draw an orthogonal H→V→H "elbow" connector from the source key's row to the
+  // target node, instead of ELK's curved route from an evenly-distributed exit.
+  // The start anchors to the source key's row center; the end to the target's
+  // left-middle. Falls back to ELK's sections until both rects are known.
   const sections = React.useMemo(() => {
     const original = props.sections;
     const fromRowIndex = edgeData?.fromRowIndex;
-    if (!original?.length || fromRowIndex == null) return original;
+    const srcRect = nodePositions.get(props.source);
+    const tgtRect = nodePositions.get(props.target);
+    if (!srcRect || !tgtRect || fromRowIndex == null) return original;
 
-    const rect = nodePositions.get(props.source);
-    const first = original[0];
-    if (!rect || !first?.startPoint) return original;
+    const startX = srcRect.x + srcRect.width;
+    const rawY = srcRect.y + fromRowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    const startY = Math.max(
+      srcRect.y + EDGE_INSET,
+      Math.min(srcRect.y + srcRect.height - EDGE_INSET, rawY)
+    );
 
-    const startX = rect.x + rect.width;
-    const rawY = rect.y + fromRowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-    const minY = rect.y + EDGE_INSET;
-    const maxY = rect.y + rect.height - EDGE_INSET;
-    const startY = Math.max(minY, Math.min(maxY, rawY));
+    const endX = tgtRect.x;
+    const endY = tgtRect.y + tgtRect.height / 2;
 
-    return [{ ...first, startPoint: { x: startX, y: startY } }, ...original.slice(1)];
-  }, [props.sections, props.source, edgeData?.fromRowIndex, nodePositions]);
+    // A vertical riser placed midway between the two cards gives the classic
+    // stepped look; keep at least a short horizontal stub off each node.
+    const midX = startX + Math.max(MIN_STUB, (endX - startX) / 2);
+
+    // reaflow types `bendPoints` as a single point but spreads it as an array
+    // at runtime (`...sections[0].bendPoints`), so pass an array and cast.
+    return [
+      {
+        id: original?.[0]?.id,
+        startPoint: { x: startX, y: startY },
+        bendPoints: [
+          { x: midX, y: startY },
+          { x: midX, y: endY },
+        ],
+        endPoint: { x: endX, y: endY },
+      },
+    ] as unknown as typeof original;
+  }, [props.sections, props.source, props.target, edgeData?.fromRowIndex, nodePositions]);
 
   return (
     <Edge
       {...props}
       sections={sections}
+      interpolation="linear"
       containerClassName={`edge-${props.id}`}
       onClick={handleClick}
       onEnter={() => setHovered(true)}
