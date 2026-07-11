@@ -1,0 +1,9 @@
+{"id":1,"user":"alice","action":"login","ts":"2026-07-11T09:00:00Z"}
+{"id":2,"user":"bob","action":"logout","ts":"2026-07-11T09:01:12Z"}
+{"id":3,"user":"carol","action":"purchase","amount":42,"currency":"USD","items":["book","pen"]}
+{"id":4,"user":"dave","action":"login","ts":"2026-07-11T09:03:44Z","meta":{"ip":"10.0.0.4","agent":"cli"}}
+{"id":5,"user":"erin","action":"error","code":500,"message":"internal error","stack":["a","b","c"]}
+{"id":6,"user":"frank","action":"login","ts":"2026-07-11T09:05:01Z"}
+{"id":7,"user":"grace","action":"logout","ts":"2026-07-11T09:06:20Z"}
+{"id":8,"user":"heidi","action":"purchase","amount":9,"currency":"EUR","items":["sticker"]}
+{"id":9,"user":"frank","action":"purchase","amount":17,"currency":"USD","nested":{"deep":{"deeper":true}}}

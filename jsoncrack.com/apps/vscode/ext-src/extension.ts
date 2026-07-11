@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import { isJsonlDocument, startLineTracking } from "./lineTracking";
 import { createWebviewPanel } from "./webview";
 
 function getPanelTitle(document?: vscode.TextDocument) {
@@ -11,9 +12,15 @@ function getPanelTitle(document?: vscode.TextDocument) {
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    vscode.commands.registerCommand("jsoncrack-vscode.start", () =>
-      createWebviewForActiveEditor(context)
-    ),
+    vscode.commands.registerCommand("jsoncrack-vscode.start", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor && isJsonlDocument(editor.document)) {
+        // JSONL files use the per-line flow; plain .json keeps whole-document mode.
+        startLineTracking(context, editor);
+      } else {
+        createWebviewForActiveEditor(context);
+      }
+    }),
     vscode.commands.registerCommand("jsoncrack-vscode.start.specific", (content?: string) =>
       createWebviewForContent(context, content)
     ),

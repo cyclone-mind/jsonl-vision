@@ -27,7 +27,7 @@
     "livepreview"
   ],
   "activationEvents": [
-    "workspaceContains:**/*.{json}"
+    "workspaceContains:**/*.{json,jsonl,ndjson,jsonlines}"
   ],
   "main": "./build/extension.js",
   "contributes": {
@@ -69,7 +69,7 @@
       "editor/title": [
         {
           "command": "jsoncrack-vscode.start",
-          "when": "resourceExtname == .json || editorLangId == json",
+          "when": "resourceExtname == .json || resourceExtname == .jsonl || resourceExtname == .ndjson || resourceExtname == .jsonlines || editorLangId == json || editorLangId == jsonl",
           "group": "navigation"
         }
       ]
