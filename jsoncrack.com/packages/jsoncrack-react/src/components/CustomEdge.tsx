@@ -126,10 +126,9 @@ const CustomEdgeBase = ({
       Math.min(srcRect.y + srcRect.height - EDGE_INSET, rawY)
     );
 
-    // Land on the target's header band when it has one, else its vertical center.
+    // Land on the target's vertical center (not the header top).
     const endX = tgtRect.x;
-    const endY =
-      tgtRect.rowOffsetY > 0 ? tgtRect.y + tgtRect.rowOffsetY / 2 : tgtRect.y + tgtRect.height / 2;
+    const endY = tgtRect.y + tgtRect.height / 2;
 
     // Vertical riser: same-row connectors (array items) share one lane and fork
     // together; different rows are staggered so their risers don't overlap into
