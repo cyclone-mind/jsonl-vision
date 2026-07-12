@@ -126,9 +126,13 @@ const CustomEdgeBase = ({
       Math.min(srcRect.y + srcRect.height - EDGE_INSET, rawY)
     );
 
-    // Land on the target's vertical center (not the header top).
+    // If the source row already lines up with the target's body, land straight
+    // across (no pointless little jog). Otherwise aim at the target's vertical
+    // center, so a connector arriving from above/below points at the middle.
     const endX = tgtRect.x;
-    const endY = tgtRect.y + tgtRect.height / 2;
+    const bodyTop = tgtRect.y + EDGE_INSET;
+    const bodyBottom = tgtRect.y + tgtRect.height - EDGE_INSET;
+    const endY = startY >= bodyTop && startY <= bodyBottom ? startY : tgtRect.y + tgtRect.height / 2;
 
     // Vertical riser: same-row connectors (array items) share one lane and fork
     // together; different rows are staggered so their risers don't overlap into
