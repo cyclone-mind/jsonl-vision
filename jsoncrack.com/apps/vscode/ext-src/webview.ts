@@ -23,6 +23,13 @@ export function createWebviewPanel(context: vscode.ExtensionContext, title = "JS
     vscode.Uri.file(path.join(extPath, "build", "webview", "index.css"))
   );
 
+  // Canvas background override (jsonl-vision.background). Validated to a known
+  // value before it reaches the HTML attribute the webview reads.
+  const rawBackground = vscode.workspace
+    .getConfiguration("jsonl-vision")
+    .get<string>("background", "auto");
+  const background = rawBackground === "dark" || rawBackground === "warm" ? rawBackground : "auto";
+
   const nonce = getNonce();
   const csp = [
     `default-src 'self' ${panel.webview.cspSource} blob:`,
@@ -39,7 +46,7 @@ export function createWebviewPanel(context: vscode.ExtensionContext, title = "JS
         <meta http-equiv="Content-Security-Policy" content="${csp}">
         <link href="${styleUri}" rel="stylesheet">
       </head>
-      <body>
+      <body data-jsonl-background="${background}">
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
         <script nonce="${nonce}" src="${scriptUri}"></script>

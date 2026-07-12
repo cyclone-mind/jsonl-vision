@@ -75,6 +75,22 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "JSONL Vision",
+      "properties": {
+        "jsonl-vision.background": {
+          "type": "string",
+          "enum": ["auto", "dark", "warm"],
+          "enumDescriptions": [
+            "Follow the VS Code color theme (light or dark)",
+            "Warm dark (charcoal) background",
+            "Warm light (cream) background"
+          ],
+          "default": "auto",
+          "description": "Canvas background theme for JSONL Vision. Applies the next time a JSONL Vision panel is opened."
+        }
+      }
     }
   },
   "scripts": {

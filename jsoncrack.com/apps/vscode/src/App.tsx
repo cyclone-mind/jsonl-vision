@@ -7,6 +7,13 @@ import { TabStrip } from "./components/TabStrip";
 import { getVsCodeApi } from "./vscodeApi";
 
 function getTheme() {
+  // The host injects the `jsonl-vision.background` setting here; "dark"/"warm"
+  // pin a palette, "auto" (or absent, e.g. the standalone dev server) follows
+  // the VS Code theme. The warm palette is the "light" one (cream cards).
+  const background = document.body.getAttribute("data-jsonl-background");
+  if (background === "dark") return "dark" as const;
+  if (background === "warm") return "light" as const;
+
   const theme = document.body.getAttribute("data-vscode-theme-kind");
   if (theme?.includes("light")) return "light" as const;
   return "dark";

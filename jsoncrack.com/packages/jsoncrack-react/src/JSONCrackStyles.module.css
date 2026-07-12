@@ -6,21 +6,17 @@
 }
 
 .showGrid {
+  /* Dotted canvas (todiagram-style): a fine dot lattice with a subtly stronger
+     dot every 5th cell, both tinted from the theme's grid colors. */
   background-image:
-    linear-gradient(var(--line-color-1) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, var(--line-color-1) 1.5px, transparent 1.5px),
-    linear-gradient(var(--line-color-2) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line-color-2) 1px, transparent 1px);
+    radial-gradient(var(--line-color-1) 1.4px, transparent 1.5px),
+    radial-gradient(var(--line-color-2) 1px, transparent 1.1px);
   background-position:
-    -1.5px -1.5px,
-    -1.5px -1.5px,
-    -1px -1px,
-    -1px -1px;
+    0 0,
+    0 0;
   background-size:
-    100px 100px,
-    100px 100px,
-    20px 20px,
-    20px 20px;
+    110px 110px,
+    22px 22px;
 }
 
 .canvasWrapper :global(.jsoncrack-space) {

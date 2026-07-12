@@ -1,66 +1,63 @@
 # JSONL Vision
 
-A Visual Studio Code extension for reading and editing **JSONL / NDJSON** files one
-line at a time. Point it at a line of a `.jsonl` file and that single record opens as
-an interactive, warm-themed node graph — objects, arrays, and values rendered as a
-connected diagram. Moving the cursor to another line opens a new tab for that line;
-double-click a scalar value to edit it and the change is written straight back to the
-file.
+Read and edit **JSONL / NDJSON** files one line at a time. Put the cursor on a line and
+that record opens as an interactive, warm-themed node graph — objects, arrays, and
+values as a connected diagram you can navigate and edit in place.
 
-Plain `.json` files still open in the inherited whole-document graph mode.
+## Features
 
-## How to use
+- **Per-line** — each line is its own graph in its own tab; move the cursor to open the
+  next one. Right-click a tab to close left / right / others.
+- **Inline editing** — double-click a scalar value; the edit is written straight back to
+  the file.
+- **Readable** — depth-colored node headers, orthogonal connectors, inline color
+  swatches, collapsible objects, on a dotted canvas.
+- **`.json` too** — plain `.json` files open in whole-document graph mode.
+- **Offline** — all parsing, rendering, and write-back happen locally.
 
-1. Build and install the extension locally (see [Development](#development)) — this
-   extension is currently self-use only and is not published to the marketplace.
-2. Open a `.jsonl`, `.ndjson`, or `.jsonlines` file (or a plain `.json` file).
-3. Click the **JSONL Vision** icon in the editor title bar (top right).
-4. Move the cursor between lines to open a tab per line; double-click a value to edit it.
+## Usage
+
+1. Open a `.jsonl`, `.ndjson`, `.jsonlines`, or `.json` file.
+2. Click the **JSONL Vision** button in the editor title bar (top right).
+3. Move the cursor between lines to open a tab per line; double-click a value to edit it.
+
+## Settings
+
+| Setting | Values | Default | Description |
+|---|---|---|---|
+| `jsonl-vision.background` | `auto` · `dark` · `warm` | `auto` | Canvas background: follow the VS Code theme, warm dark (charcoal), or warm light (cream). Applies when a panel is next opened. |
 
 ## Privacy
 
-The extension works **fully offline**. No data is sent to any server. All parsing,
-visualization, and write-back happen locally in your editor.
+Works **fully offline** — no data is sent anywhere.
 
 ## Credits
 
-JSONL Vision is built on the open-source graph engine from
-[JSON Crack](https://jsoncrack.com) (`packages/jsoncrack-react`, Apache-2.0) and its
-VS Code extension scaffold (`apps/vscode`, MIT). Those upstream license and copyright
-notices are preserved. JSONL Vision is an independent project and is not affiliated
-with or endorsed by JSON Crack.
+Built on the open-source graph engine from [JSON Crack](https://jsoncrack.com)
+(`packages/jsoncrack-react`, Apache-2.0) and its VS Code scaffold (`apps/vscode`, MIT),
+with upstream license and copyright notices preserved (see `NOTICE.md`). JSONL Vision is
+an independent project, not affiliated with or endorsed by JSON Crack.
 
 ## Development
 
-This extension lives in `apps/vscode` inside the vendored `jsoncrack.com` monorepo.
-
-**Prerequisites:** Node.js `>=20`, pnpm `>=10`
-
-**Stack:** Vite (webview) + esbuild (extension host) + React 19
+Lives in `apps/vscode` inside the vendored `jsoncrack.com` monorepo.
+**Prerequisites:** Node.js `>=20`, pnpm `>=10`. **Stack:** Vite (webview) + esbuild
+(host) + React 19.
 
 ```sh
-# Install dependencies from repo root
-pnpm install
-
-# Build the extension
+pnpm install              # from repo root
 cd apps/vscode
-pnpm run build
+pnpm run build            # production build
+pnpm run vsc:package      # build + produce the .vsix
 ```
 
-### Debugging
-
-1. Open the **monorepo root** in VS Code.
-2. Press **F5** to launch the "Run VSCode Extension" config — it builds and opens the Extension Development Host.
-3. After making changes, press `Cmd+R` (macOS) / `Ctrl+R` (Windows/Linux) in the host window to reload.
-
-### Scripts
+Debugging: open the **monorepo root** in VS Code and press **F5** ("Run VSCode
+Extension") to launch the Extension Development Host; reload it with `Ctrl+R` / `Cmd+R`
+after changes.
 
 | Script | Description |
 |---|---|
-| `build` | Production build (minified, no sourcemaps) |
-| `build:dev` | Dev build (sourcemaps, no minification) |
-| `watch` | Watch extension host (`ext-src/`) for changes |
-| `watch:webview` | Watch webview (`src/`) for changes |
-| `dev` | Start Vite dev server (standalone webview in browser) |
-| `lint` | Run ESLint + Prettier check |
-| `clean` | Remove `build/` directory |
+| `build` / `build:dev` | Production / dev build |
+| `watch` / `watch:webview` | Watch host / webview |
+| `dev` | Vite dev server (standalone webview in a browser) |
+| `lint` | ESLint + Prettier |
