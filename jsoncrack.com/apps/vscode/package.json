@@ -90,9 +90,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@mantine/code-highlight": "^8.3.18",
-    "@mantine/core": "^8.3.18",
-    "@mantine/hooks": "^8.3.18",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^25.6.0",
     "@types/react": "19.2.11",
@@ -116,8 +113,7 @@
   "dependencies": {
     "jsoncrack-react": "workspace:*",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "shiki": "^4.0.2"
+    "react-dom": "19.2.4"
   },
   "engines": {
     "vscode": "^1.100.0"

@@ -1,19 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Box, MantineProvider } from "@mantine/core";
-import { CodeHighlightAdapterProvider, createShikiAdapter } from "@mantine/code-highlight";
 import type { NodeData } from "jsoncrack-react";
 import { JSONCrack } from "jsoncrack-react";
 import { NodeModal } from "./components/NodeModal";
 import type { TabStripTab } from "./components/TabStrip";
 import { TabStrip } from "./components/TabStrip";
 import { getVsCodeApi } from "./vscodeApi";
-
-async function loadShiki() {
-  const { createHighlighter } = await import("shiki");
-  return createHighlighter({ langs: ["json"], themes: [] });
-}
-
-const shikiAdapter = createShikiAdapter(loadShiki);
 
 function getTheme() {
   const theme = document.body.getAttribute("data-vscode-theme-kind");
@@ -103,36 +94,32 @@ const App: React.FC = () => {
   const editingEnabled = tabs.length > 0;
 
   return (
-    <MantineProvider forceColorScheme={theme}>
-      <CodeHighlightAdapterProvider adapter={shikiAdapter}>
-        <Box h="100vh" w="100vw" style={{ display: "flex", flexDirection: "column" }}>
-          {tabs.length > 0 && (
-            <TabStrip
-              tabs={tabs}
-              focusedLine={focusedLine}
-              onFocus={focusTab}
-              onClose={closeTab}
-              onRefresh={refreshTab}
-              onCloseLeft={closeTabsLeft}
-              onCloseRight={closeTabsRight}
-              onCloseOthers={closeOtherTabs}
-            />
-          )}
-          <Box style={{ position: "relative", flex: 1, minHeight: 0 }}>
-            <JSONCrack
-              json={json}
-              theme={theme}
-              showControls={false}
-              onNodeClick={handleNodeClick}
-              onEditValue={editingEnabled ? editValue : undefined}
-            />
-          </Box>
-          {selectedNode && (
-            <NodeModal opened={!!selectedNode} onClose={closeNodeModal} nodeData={selectedNode} />
-          )}
-        </Box>
-      </CodeHighlightAdapterProvider>
-    </MantineProvider>
+    <div style={{ height: "100vh", width: "100vw", display: "flex", flexDirection: "column" }}>
+      {tabs.length > 0 && (
+        <TabStrip
+          tabs={tabs}
+          focusedLine={focusedLine}
+          onFocus={focusTab}
+          onClose={closeTab}
+          onRefresh={refreshTab}
+          onCloseLeft={closeTabsLeft}
+          onCloseRight={closeTabsRight}
+          onCloseOthers={closeOtherTabs}
+        />
+      )}
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <JSONCrack
+          json={json}
+          theme={theme}
+          showControls={false}
+          onNodeClick={handleNodeClick}
+          onEditValue={editingEnabled ? editValue : undefined}
+        />
+      </div>
+      {selectedNode && (
+        <NodeModal opened={!!selectedNode} onClose={closeNodeModal} nodeData={selectedNode} />
+      )}
+    </div>
   );
 };
 

@@ -1,9 +1,9 @@
-import type { ModalProps } from "@mantine/core";
-import { Modal, Stack, Text, ScrollArea } from "@mantine/core";
-import { CodeHighlight } from "@mantine/code-highlight";
+import React from "react";
 import type { NodeData } from "jsoncrack-react";
 
-interface NodeModalProps extends ModalProps {
+interface NodeModalProps {
+  opened: boolean;
+  onClose: () => void;
   nodeData: NodeData | null;
 }
 
@@ -27,36 +27,63 @@ const jsonPathToString = (path?: NodeData["path"]) => {
   return `$[${segments.join("][")}]`;
 };
 
+/** A monospace block with a copy button. No syntax highlighter — the graph is
+ *  already colored, and dropping shiki/mantine keeps the webview bundle small.
+ *  Themed off VS Code's `--vscode-*` variables, matching the tab strip. */
+const CopyableCode = ({ label, value }: { label: string; value: string }) => {
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(value).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    });
+  };
+  return (
+    <div className="jsonl-modal-section">
+      <div className="jsonl-modal-sectionhead">
+        <span className="jsonl-modal-label">{label}</span>
+        <button type="button" className="jsonl-modal-copy" onClick={copy}>
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <pre className="jsonl-modal-code">{value}</pre>
+    </div>
+  );
+};
+
 export const NodeModal = ({ opened, onClose, nodeData }: NodeModalProps) => {
+  React.useEffect(() => {
+    if (!opened) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [opened, onClose]);
+
+  if (!opened) return null;
+
   const nodeContent = normalizeNodeData(nodeData?.text ?? []);
   const jsonPath = jsonPathToString(nodeData?.path);
 
   return (
-    <Modal title="Node Content" size="auto" opened={opened} onClose={onClose} centered>
-      <Stack py="sm" gap="sm">
-        <Stack gap="xs">
-          <Text fz="xs" fw={500}>
-            Content
-          </Text>
-          <ScrollArea.Autosize mah={250} maw={600}>
-            <CodeHighlight code={nodeContent} miw={350} maw={600} language="json" withCopyButton />
-          </ScrollArea.Autosize>
-        </Stack>
-        <Text fz="xs" fw={500}>
-          JSON Path
-        </Text>
-        <ScrollArea.Autosize maw={600}>
-          <CodeHighlight
-            code={jsonPath}
-            miw={350}
-            mah={250}
-            language="json"
-            copyLabel="Copy to clipboard"
-            copiedLabel="Copied to clipboard"
-            withCopyButton
-          />
-        </ScrollArea.Autosize>
-      </Stack>
-    </Modal>
+    <div className="jsonl-modal-overlay" role="presentation" onClick={onClose}>
+      <div
+        className="jsonl-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Node Content"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="jsonl-modal-header">
+          <span className="jsonl-modal-title">Node Content</span>
+          <button type="button" className="jsonl-modal-close" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <CopyableCode label="Content" value={nodeContent} />
+        <CopyableCode label="JSON Path" value={jsonPath} />
+      </div>
+    </div>
   );
 };
