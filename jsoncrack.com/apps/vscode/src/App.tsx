@@ -6,17 +6,22 @@ import type { TabStripTab } from "./components/TabStrip";
 import { TabStrip } from "./components/TabStrip";
 import { getVsCodeApi } from "./vscodeApi";
 
-function getTheme() {
-  // The host injects the `jsonl-vision.background` setting here; "dark"/"warm"
-  // pin a palette, "auto" (or absent, e.g. the standalone dev server) follows
-  // the VS Code theme. The warm palette is the "light" one (cream cards).
-  const background = document.body.getAttribute("data-jsonl-background");
+type BackgroundSetting = "auto" | "dark" | "warm";
+
+/** Read the initial `jsonl-vision.background` value the host stamped on <body>. */
+function readInitialBackground(): BackgroundSetting {
+  const bg = document.body.getAttribute("data-jsonl-background");
+  return bg === "dark" || bg === "warm" ? bg : "auto";
+}
+
+/** Resolve the graph palette from the background setting. "dark"/"warm" pin a
+ *  palette (warm = the "light" cream one); "auto" (or the standalone dev server,
+ *  which has no override) follows the VS Code theme. */
+function resolveTheme(background: BackgroundSetting) {
   if (background === "dark") return "dark" as const;
   if (background === "warm") return "light" as const;
-
-  const theme = document.body.getAttribute("data-vscode-theme-kind");
-  if (theme?.includes("light")) return "light" as const;
-  return "dark";
+  const kind = document.body.getAttribute("data-vscode-theme-kind");
+  return kind?.includes("light") ? ("light" as const) : ("dark" as const);
 }
 
 interface HostMessage {
@@ -24,6 +29,8 @@ interface HostMessage {
   // Present only in JSONL line-tracking mode; absent for whole-document `.json`.
   tabs?: TabStripTab[];
   focusedLine?: number | null;
+  // Pushed live when the jsonl-vision.background setting changes.
+  background?: BackgroundSetting;
 }
 
 const App: React.FC = () => {
@@ -31,7 +38,8 @@ const App: React.FC = () => {
   const [tabs, setTabs] = useState<TabStripTab[]>([]);
   const [focusedLine, setFocusedLine] = useState<number | null>(null);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
-  const theme = getTheme();
+  const [background, setBackground] = useState<BackgroundSetting>(readInitialBackground);
+  const theme = resolveTheme(background);
 
   useEffect(() => {
     const vscode = getVsCodeApi();
@@ -47,6 +55,10 @@ const App: React.FC = () => {
       if (Array.isArray(data?.tabs)) {
         setTabs(data.tabs);
         setFocusedLine(data.focusedLine ?? null);
+      }
+      // Live background-setting change pushed by the host.
+      if (data?.background === "auto" || data?.background === "dark" || data?.background === "warm") {
+        setBackground(data.background);
       }
     };
 

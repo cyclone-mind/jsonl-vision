@@ -1,6 +1,12 @@
 import * as path from "path";
 import * as vscode from "vscode";
 
+/** Read + validate the `jsonl-vision.background` setting to a known value. */
+function resolveBackground(): "auto" | "dark" | "warm" {
+  const raw = vscode.workspace.getConfiguration("jsonl-vision").get<string>("background", "auto");
+  return raw === "dark" || raw === "warm" ? raw : "auto";
+}
+
 export function createWebviewPanel(context: vscode.ExtensionContext, title = "JSONL Vision") {
   const extPath = context.extensionPath;
   const webviewDir = vscode.Uri.file(path.join(extPath, "build", "webview"));
@@ -23,12 +29,9 @@ export function createWebviewPanel(context: vscode.ExtensionContext, title = "JS
     vscode.Uri.file(path.join(extPath, "build", "webview", "index.css"))
   );
 
-  // Canvas background override (jsonl-vision.background). Validated to a known
-  // value before it reaches the HTML attribute the webview reads.
-  const rawBackground = vscode.workspace
-    .getConfiguration("jsonl-vision")
-    .get<string>("background", "auto");
-  const background = rawBackground === "dark" || rawBackground === "warm" ? rawBackground : "auto";
+  // Canvas background override (jsonl-vision.background), stamped on <body> for
+  // the webview to read on load.
+  const background = resolveBackground();
 
   const nonce = getNonce();
   const csp = [
@@ -52,6 +55,16 @@ export function createWebviewPanel(context: vscode.ExtensionContext, title = "JS
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>`;
+
+  // Hot-reload the background setting: re-post it to this panel whenever it
+  // changes, so the theme updates live without reopening. Scoped to this panel
+  // and torn down with it.
+  const cfgSub = vscode.workspace.onDidChangeConfiguration(event => {
+    if (event.affectsConfiguration("jsonl-vision.background")) {
+      void panel.webview.postMessage({ background: resolveBackground() });
+    }
+  });
+  panel.onDidDispose(() => cfgSub.dispose());
 
   return panel;
 }

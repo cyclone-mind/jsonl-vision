@@ -23,11 +23,47 @@ const EDGE_INSET = 6;
 /** Minimum horizontal stub off each card before the vertical riser. */
 const MIN_STUB = 14;
 /**
- * Distance from a source card's right edge to the shared vertical riser. Fixed
- * (not each edge's own midpoint) so every connector leaving a node forks at the
- * same x — otherwise targets at different x-positions scatter the risers.
+ * Base distance from a source card's right edge to the vertical riser. Connectors
+ * leaving the *same row* (e.g. an array's items) share one riser and fork
+ * together; connectors from *different* rows are staggered by {@link ROW_STAGGER}
+ * so their risers don't overlap and read as one merged line.
  */
-const FORK_GAP = 36;
+const FORK_GAP = 32;
+/** Per-source-row horizontal offset of the riser, so sibling rows don't merge. */
+const ROW_STAGGER = 16;
+/** Corner radius for the rounded elbows. */
+const CORNER_RADIUS = 9;
+
+type Pt = { x: number; y: number };
+
+const dist = (a: Pt, b: Pt) => Math.hypot(b.x - a.x, b.y - a.y);
+const along = (from: Pt, to: Pt, r: number): Pt => {
+  const d = dist(from, to) || 1;
+  return { x: from.x + ((to.x - from.x) * r) / d, y: from.y + ((to.y - from.y) * r) / d };
+};
+
+/**
+ * reaflow `interpolation` function: turn the elbow's corner points into an SVG
+ * path with rounded corners (a short quadratic arc at each bend) instead of hard
+ * 90° joins. Passed to `<Edge interpolation={...}>`; reaflow calls it with the
+ * `[start, ...bends, end]` point list and uses the returned string as the path.
+ */
+const roundedElbow = (points: Pt[]): string => {
+  if (!points || points.length < 2) return "";
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const prev = points[i - 1];
+    const corner = points[i];
+    const next = points[i + 1];
+    const r = Math.min(CORNER_RADIUS, dist(prev, corner) / 2, dist(corner, next) / 2);
+    const entry = along(corner, prev, r);
+    const exit = along(corner, next, r);
+    d += `L${entry.x},${entry.y}Q${corner.x},${corner.y} ${exit.x},${exit.y}`;
+  }
+  const last = points[points.length - 1];
+  d += `L${last.x},${last.y}`;
+  return d;
+};
 
 const isQueryRoot = (value: unknown): value is QueryRoot => {
   return (
@@ -95,10 +131,11 @@ const CustomEdgeBase = ({
     const endY =
       tgtRect.rowOffsetY > 0 ? tgtRect.y + tgtRect.rowOffsetY / 2 : tgtRect.y + tgtRect.height / 2;
 
-    // Shared vertical riser a fixed gap right of the source, so all connectors
-    // leaving this node branch from the same x. Clamped to stay in the gap
-    // between the two cards when a target sits unusually close.
-    const trunkX = Math.max(startX + MIN_STUB, Math.min(startX + FORK_GAP, endX - MIN_STUB));
+    // Vertical riser: same-row connectors (array items) share one lane and fork
+    // together; different rows are staggered so their risers don't overlap into
+    // a single merged line. Clamped to stay in the gap between the two cards.
+    const laneOffset = FORK_GAP + fromRowIndex * ROW_STAGGER;
+    const trunkX = Math.max(startX + MIN_STUB, Math.min(startX + laneOffset, endX - MIN_STUB));
 
     // reaflow types `bendPoints` as a single point but spreads it as an array
     // at runtime (`...sections[0].bendPoints`), so pass an array and cast.
@@ -119,7 +156,7 @@ const CustomEdgeBase = ({
     <Edge
       {...props}
       sections={sections}
-      interpolation="linear"
+      interpolation={roundedElbow as never}
       containerClassName={`edge-${props.id}`}
       onClick={handleClick}
       onEnter={() => setHovered(true)}
