@@ -5,6 +5,7 @@
 node_modules/**
 src/**
 ext-src/**
+samples/**
 .gitignore
 .prettierignore
 .prettierrc

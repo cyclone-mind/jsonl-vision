@@ -5,8 +5,16 @@
   "description": "View and edit a single line of a JSONL/NDJSON file as an interactive, warm-themed node graph.",
   "publisher": "jsonl-vision",
   "license": "MIT",
+  "icon": "assets/icon.png",
   "author": {
     "name": "JSONL Vision"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyclone-mind/jsonl-vision"
+  },
+  "bugs": {
+    "url": "https://github.com/cyclone-mind/jsonl-vision/issues"
   },
   "categories": [
     "Visualization"
