@@ -135,9 +135,13 @@ const CustomEdgeBase = ({
     const endY = startY >= bodyTop && startY <= bodyBottom ? startY : tgtRect.y + tgtRect.height / 2;
 
     // Vertical riser: same-row connectors (array items) share one lane and fork
-    // together; different rows are staggered so their risers don't overlap into
-    // a single merged line. Clamped to stay in the gap between the two cards.
-    const laneOffset = FORK_GAP + fromRowIndex * ROW_STAGGER;
+    // together; different rows are staggered so their risers don't merge. Lanes
+    // are ordered bottom-row-innermost — a lower row's items sit further down and
+    // its riser is long, so keeping it on an inner lane stops a higher row's
+    // rightward branches from crossing that riser. Clamped to the inter-card gap.
+    const totalRows = Math.max(1, Math.round((srcRect.height - srcRect.rowOffsetY) / ROW_HEIGHT));
+    const laneIndex = Math.min(totalRows - 1, Math.max(0, totalRows - 1 - fromRowIndex));
+    const laneOffset = FORK_GAP + laneIndex * ROW_STAGGER;
     const trunkX = Math.max(startX + MIN_STUB, Math.min(startX + laneOffset, endX - MIN_STUB));
 
     // reaflow types `bendPoints` as a single point but spreads it as an array
