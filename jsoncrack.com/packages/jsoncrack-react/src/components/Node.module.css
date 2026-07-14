@@ -51,6 +51,21 @@
   box-sizing: border-box;
 }
 
+.row.multiline {
+  align-items: flex-start;
+  line-height: 18px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  white-space: normal;
+}
+
+.row.multiline .rowContent {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* Key + value share the flexible space; the collapse control sits after them. */
 .rowContent {
   flex: 1 1 auto;
@@ -68,9 +83,13 @@
 /* While a row/leaf is being edited it holds an <input>; drop the ellipsis and
    clipping so the input shows in full instead of rendering "…". */
 .row:has(input),
+.row:has(textarea),
 .rowContent:has(input),
+.rowContent:has(textarea),
 .key:has(input),
-.textNodeWrapper:has(input) {
+.key:has(textarea),
+.textNodeWrapper:has(input),
+.textNodeWrapper:has(textarea) {
   overflow: visible;
   text-overflow: clip;
 }
@@ -115,6 +134,24 @@
   width: 100%;
   overflow: hidden;
   padding: 0 10px;
+}
+
+.textNodeWrapper.multiline {
+  align-items: flex-start;
+  box-sizing: border-box;
+  line-height: 18px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  overflow: visible;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.textNodeWrapper.multiline .key {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .row:global(.searched),

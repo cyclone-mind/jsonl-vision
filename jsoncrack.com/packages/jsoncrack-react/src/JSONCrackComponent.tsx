@@ -39,6 +39,7 @@ import { CustomEdge } from "./components/CustomEdge";
 import { CustomNode } from "./components/CustomNode";
 import type { EditableScalar } from "./components/EditContext";
 import { EditContext } from "./components/EditContext";
+import { computeLaneIndices } from "./edgeLanes";
 import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData, NodeRect } from "./types";
 
 const layoutOptions = {
@@ -462,6 +463,14 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
 
     const edgeTargetById = useMemo(() => buildEdgeTargetMap(visibleEdges), [visibleEdges]);
 
+    // Per-source-node fork-lane order (inner→outer), minimizing connector
+    // crossings across a node's rows — see edgeLanes.ts. Recomputed whenever the
+    // edge set or laid-out node rects change.
+    const laneIndexById = useMemo(
+      () => computeLaneIndices(visibleEdges, nodePositions),
+      [visibleEdges, nodePositions]
+    );
+
     // Signal "relayouting" whenever the collapsed-set changes so the spinner
     // appears immediately on collapse/expand. JSON edits already route
     // through the parse effect which handles `setLoading(true)` on its own,
@@ -608,9 +617,10 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
           edgeTargetById={edgeTargetById}
           hostElement={containerRef.current}
           nodePositions={nodePositions}
+          laneIndexById={laneIndexById}
         />
       ),
-      [viewPort, edgeTargetById, nodePositions]
+      [viewPort, edgeTargetById, nodePositions, laneIndexById]
     );
 
     const bindLongPress = useLongPress(() => setCanvasDragging(containerRef.current, true), {

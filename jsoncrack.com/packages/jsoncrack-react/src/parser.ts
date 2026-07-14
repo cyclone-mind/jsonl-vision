@@ -1,5 +1,5 @@
 import { getNodePath, parseTree, type JSONPath, type Node, type ParseError } from "jsonc-parser";
-import { HEADER_HEIGHT } from "./layoutConstants";
+import { HEADER_HEIGHT, ROW_HEIGHT } from "./layoutConstants";
 import type { EdgeData, GraphData, NodeData, NodeRow } from "./types";
 import { calculateNodeSize } from "./utils/calculateNodeSize";
 
@@ -223,7 +223,14 @@ export const parseGraph = (json: string): ParseGraphResult => {
         displayText = `${text[0].value}`;
       }
 
-      const { width, height } = calculateNodeSize(displayText);
+      const { width, height, rowHeights } = calculateNodeSize(displayText);
+
+      if (rowHeights) {
+        text.forEach((row, index) => {
+          const rowHeight = rowHeights[index] ?? ROW_HEIGHT;
+          if (rowHeight > ROW_HEIGHT) row.height = rowHeight;
+        });
+      }
 
       const nodePath = getNodePath(node);
       const label = buildLabel(nodePath);
@@ -257,6 +264,30 @@ export const parseGraph = (json: string): ParseGraphResult => {
   }
 
   traverse(jsonTree);
+
+  // Resolve source-row centers after the full graph exists. Precomputing each
+  // node's centers keeps this linear in total rows + edges, even when one node
+  // has many container-valued rows.
+  const nodeById = new Map(nodes.map(node => [node.id, node]));
+  const rowCentersByNode = new Map<string, number[]>();
+  for (const node of nodes) {
+    let rowTop = 0;
+    rowCentersByNode.set(
+      node.id,
+      node.text.map(row => {
+        const height = row.height ?? ROW_HEIGHT;
+        const center = rowTop + height / 2;
+        rowTop += height;
+        return center;
+      })
+    );
+  }
+
+  for (const edge of edges) {
+    if (edge.fromRowIndex == null) continue;
+    if (!nodeById.has(edge.from)) continue;
+    edge.fromRowOffsetY = rowCentersByNode.get(edge.from)?.[edge.fromRowIndex];
+  }
 
   return {
     nodes,

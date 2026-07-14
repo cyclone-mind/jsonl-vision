@@ -2,6 +2,8 @@ import React from "react";
 import type { ViewPort } from "react-zoomable-ui";
 import type { EdgeProps } from "reaflow";
 import { Edge } from "reaflow";
+import { getSourceRowY, getTargetLandingY } from "../edgeGeometry";
+import { EDGE_INSET } from "../layoutConstants";
 import type { EdgeData, NodeRect } from "../types";
 
 type QueryRoot = {
@@ -14,12 +16,15 @@ type CustomEdgeProps = EdgeProps & {
   hostElement: QueryRoot | null;
   /** Laid-out source-node rects, used to anchor the edge to its key's row. */
   nodePositions: Map<string, NodeRect>;
+  /**
+   * This edge's fork-lane index (0 = innermost) among its source node's rows,
+   * pre-computed by `computeLaneIndices` to minimize crossings across the whole
+   * node — see edgeLanes.ts. Falls back to 0 (all edges share the inner lane)
+   * for an edge not yet in the map (e.g. the first paint before layout settles).
+   */
+  laneIndexById: Map<string, number>;
 };
 
-/** Row height in the object node (mirrors ObjectNode's ROW_HEIGHT). */
-const ROW_HEIGHT = 30;
-/** Keep the anchor this far inside the card's top/bottom edges. */
-const EDGE_INSET = 6;
 /** Minimum horizontal stub off each card before the vertical riser. */
 const MIN_STUB = 14;
 /**
@@ -79,6 +84,7 @@ const CustomEdgeBase = ({
   edgeTargetById,
   hostElement,
   nodePositions,
+  laneIndexById,
   ...props
 }: CustomEdgeProps) => {
   const [hovered, setHovered] = React.useState(false);
@@ -120,7 +126,8 @@ const CustomEdgeBase = ({
 
     // Rows start below the source node's header band; measure from there.
     const startX = srcRect.x + srcRect.width;
-    const rawY = srcRect.y + srcRect.rowOffsetY + fromRowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+    const rawY = edgeData ? getSourceRowY(edgeData, srcRect) : null;
+    if (rawY == null) return original;
     const startY = Math.max(
       srcRect.y + srcRect.rowOffsetY + EDGE_INSET,
       Math.min(srcRect.y + srcRect.height - EDGE_INSET, rawY)
@@ -130,17 +137,15 @@ const CustomEdgeBase = ({
     // across (no pointless little jog). Otherwise aim at the target's vertical
     // center, so a connector arriving from above/below points at the middle.
     const endX = tgtRect.x;
-    const bodyTop = tgtRect.y + EDGE_INSET;
-    const bodyBottom = tgtRect.y + tgtRect.height - EDGE_INSET;
-    const endY = startY >= bodyTop && startY <= bodyBottom ? startY : tgtRect.y + tgtRect.height / 2;
+    const endY = getTargetLandingY(startY, tgtRect);
 
     // Vertical riser: same-row connectors (array items) share one lane and fork
-    // together; different rows are staggered so their risers don't merge. Lanes
-    // are ordered bottom-row-innermost — a lower row's items sit further down and
-    // its riser is long, so keeping it on an inner lane stops a higher row's
-    // rightward branches from crossing that riser. Clamped to the inter-card gap.
-    const totalRows = Math.max(1, Math.round((srcRect.height - srcRect.rowOffsetY) / ROW_HEIGHT));
-    const laneIndex = Math.min(totalRows - 1, Math.max(0, totalRows - 1 - fromRowIndex));
+    // together; different rows are staggered so their risers don't merge. Lane
+    // order (inner→outer) is pre-computed per source node by computeLaneIndices
+    // to minimize crossings from the *actual* target positions — a fixed
+    // top-row/bottom-row-inner rule can't handle both a node whose rows all fan
+    // upward and one whose rows fan in opposite directions. Clamped to the gap.
+    const laneIndex = laneIndexById.get(edgeId ?? "") ?? 0;
     const laneOffset = FORK_GAP + laneIndex * ROW_STAGGER;
     const trunkX = Math.max(startX + MIN_STUB, Math.min(startX + laneOffset, endX - MIN_STUB));
 
@@ -157,7 +162,16 @@ const CustomEdgeBase = ({
         endPoint: { x: endX, y: endY },
       },
     ] as unknown as typeof original;
-  }, [props.sections, props.source, props.target, edgeData?.fromRowIndex, nodePositions]);
+  }, [
+    props.sections,
+    props.source,
+    props.target,
+    edgeData?.fromRowIndex,
+    edgeData?.fromRowOffsetY,
+    nodePositions,
+    laneIndexById,
+    edgeId,
+  ]);
 
   return (
     <Edge

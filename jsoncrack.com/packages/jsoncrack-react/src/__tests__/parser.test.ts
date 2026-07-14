@@ -134,4 +134,17 @@ describe("parseGraph", () => {
       expect(nodeIds.has(edge.to)).toBe(true);
     });
   });
+
+  it("keeps long strings complete and anchors later edges below their expanded row", () => {
+    const longText = "雨村抬头看向堂上，继续说出这一段完整台词。".repeat(30);
+    const result = parseGraph(JSON.stringify({ scene_text: longText, details: { line: 433 } }));
+    const detailsEdge = result.edges.find(edge => edge.text === "details");
+    const root = result.nodes.find(node => node.id === detailsEdge?.from);
+
+    expect(root?.text[0].value).toBe(longText);
+    expect(root?.text[0].height).toBeGreaterThan(30);
+    expect(detailsEdge?.fromRowOffsetY).toBe(
+      root!.text[0].height! + (root!.text[1].height ?? 30) / 2
+    );
+  });
 });

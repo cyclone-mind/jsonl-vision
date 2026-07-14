@@ -31,6 +31,19 @@
   outline: none;
 }
 
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  max-height: 240px;
+  height: auto;
+  line-height: 18px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+
 .invalid {
   border-color: #e2483f;
   box-shadow: 0 0 0 1px rgba(226, 72, 63, 0.4);

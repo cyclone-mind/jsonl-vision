@@ -1,6 +1,6 @@
 import React from "react";
 import type { JSONPath } from "jsonc-parser";
-import { HEADER_COLOR_COUNT } from "../layoutConstants";
+import { HEADER_COLOR_COUNT, ROW_HEIGHT } from "../layoutConstants";
 import type { NodeData } from "../types";
 import { isPathCollapsed, useCollapseContext } from "./CollapseContext";
 import { EditableValue } from "./EditableValue";
@@ -18,14 +18,13 @@ type RowProps = {
   row: NodeData["text"][number];
   x: number;
   y: number;
-  index: number;
+  rowOffsetY: number;
   parentPath: JSONPath;
 };
 
-const ROW_HEIGHT = 30;
-
-const Row = ({ row, x, y, index, parentPath }: RowProps) => {
-  const rowPosition = index * ROW_HEIGHT;
+const Row = ({ row, x, y, rowOffsetY, parentPath }: RowProps) => {
+  const height = row.height ?? ROW_HEIGHT;
+  const multiline = height > ROW_HEIGHT;
   const { collapsedSet, onToggleCollapse } = useCollapseContext();
 
   const isContainer =
@@ -63,17 +62,20 @@ const Row = ({ row, x, y, index, parentPath }: RowProps) => {
     onToggleCollapse(rowPath);
   };
 
-  const rowClassName = collapsed ? `${styles.row} ${styles.collapsed}` : styles.row;
+  const rowClassName = [styles.row, collapsed && styles.collapsed, multiline && styles.multiline]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <span
       className={rowClassName}
       style={{
         color: getTextColor({ value: row.value, type: typeof row.value }),
+        height,
       }}
       data-key={`${row.key}: ${row.value}`}
       data-x={x}
-      data-y={y + rowPosition}
+      data-y={y + rowOffsetY}
     >
       <span className={styles.rowContent}>
         <span
@@ -110,6 +112,22 @@ const Row = ({ row, x, y, index, parentPath }: RowProps) => {
 const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
   const parentPath = node.path ?? [];
   const colorSlot = (node.depth ?? 0) % HEADER_COLOR_COUNT;
+  let rowOffsetY = 0;
+  const rows = node.text.map((row, index) => {
+    const currentOffset = rowOffsetY;
+    rowOffsetY += row.height ?? ROW_HEIGHT;
+    return (
+      <Row
+        key={`${node.id}-${index}`}
+        row={row}
+        x={x}
+        y={y}
+        rowOffsetY={currentOffset}
+        parentPath={parentPath}
+      />
+    );
+  });
+
   return (
     <foreignObject
       className={`${styles.foreignObject} ${styles.objectForeignObject}`}
@@ -130,16 +148,7 @@ const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
           {node.label}
         </span>
       )}
-      {node.text.map((row, index) => (
-        <Row
-          key={`${node.id}-${index}`}
-          row={row}
-          x={x}
-          y={y}
-          index={index}
-          parentPath={parentPath}
-        />
-      ))}
+      {rows}
     </foreignObject>
   );
 };
@@ -168,6 +177,7 @@ const areRowsEqual = (prevRows: NodeData["text"], nextRows: NodeData["text"]) =>
       prevRow.key !== nextRow.key ||
       prevRow.value !== nextRow.value ||
       prevRow.type !== nextRow.type ||
+      prevRow.height !== nextRow.height ||
       prevRow.childrenCount !== nextRow.childrenCount ||
       !areRowTargetsEqual(prevRow.to, nextRow.to)
     ) {

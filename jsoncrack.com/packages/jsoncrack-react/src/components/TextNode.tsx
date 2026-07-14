@@ -18,6 +18,7 @@ const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
   if (!firstRow) return null;
 
   const value = firstRow.value;
+  const multiline = height > 36;
 
   // Primitive leaves (including array items like ["stack", 0]) are editable;
   // the array/object summary nodes ("[N items]" / "{0 keys}") are not.
@@ -34,7 +35,9 @@ const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
       y={0}
     >
       <span
-        className={styles.textNodeWrapper}
+        className={
+          multiline ? `${styles.textNodeWrapper} ${styles.multiline}` : styles.textNodeWrapper
+        }
         data-x={x}
         data-y={y}
         data-key={JSON.stringify(text)}
@@ -54,7 +57,11 @@ const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
 };
 
 const propsAreEqual = (prev: TextNodeProps, next: TextNodeProps) => {
-  return prev.node.text === next.node.text && prev.node.width === next.node.width;
+  return (
+    prev.node.text === next.node.text &&
+    prev.node.width === next.node.width &&
+    prev.node.height === next.node.height
+  );
 };
 
 export const TextNode = React.memo(TextNodeBase, propsAreEqual);

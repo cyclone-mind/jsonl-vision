@@ -57,9 +57,16 @@ export const EditableValue = ({ path, value, valueType, children }: EditableValu
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState("");
   const [invalid, setInvalid] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   const editable = !!onEditValue;
+  const multiline = valueType === "string" && String(value).includes("\n");
+  const setInputRef = React.useCallback(
+    (element: HTMLInputElement | HTMLTextAreaElement | null) => {
+      inputRef.current = element;
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (editing && inputRef.current) {
@@ -121,22 +128,51 @@ export const EditableValue = ({ path, value, valueType, children }: EditableValu
     );
   }
 
+  const inputClassName = invalid ? `${styles.input} ${styles.invalid}` : styles.input;
+  const sharedProps = {
+    className: inputClassName,
+    value: draft,
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setDraft(event.target.value);
+      if (invalid) setInvalid(false);
+    },
+    onMouseDown: (event: React.MouseEvent) => event.stopPropagation(),
+    onClick: (event: React.MouseEvent) => event.stopPropagation(),
+    onDoubleClick: (event: React.MouseEvent) => event.stopPropagation(),
+    onBlur: commitOrCancel,
+  };
+
+  if (multiline) {
+    return (
+      <textarea
+        {...sharedProps}
+        ref={setInputRef}
+        className={`${inputClassName} ${styles.textarea}`}
+        rows={Math.min(12, Math.max(3, draft.split("\n").length))}
+        aria-label="Edit multiline string"
+        title="Ctrl+Enter to save, Escape to cancel"
+        onKeyDown={event => {
+          event.stopPropagation();
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            commit();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            cancel();
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <input
-      ref={inputRef}
-      className={invalid ? `${styles.input} ${styles.invalid}` : styles.input}
-      value={draft}
+      {...sharedProps}
+      ref={setInputRef}
       // Size to content so the input stays roughly as wide as the value it
       // replaced; without this the browser default (~20 chars) overflows the
       // fixed-width node and the row renders a text-overflow ellipsis.
       size={Math.min(Math.max(draft.length + 1, 2), 60)}
-      onChange={event => {
-        setDraft(event.target.value);
-        if (invalid) setInvalid(false);
-      }}
-      onMouseDown={event => event.stopPropagation()}
-      onClick={event => event.stopPropagation()}
-      onDoubleClick={event => event.stopPropagation()}
       onKeyDown={event => {
         event.stopPropagation();
         if (event.key === "Enter") {
@@ -147,7 +183,6 @@ export const EditableValue = ({ path, value, valueType, children }: EditableValu
           cancel();
         }
       }}
-      onBlur={commitOrCancel}
     />
   );
 };

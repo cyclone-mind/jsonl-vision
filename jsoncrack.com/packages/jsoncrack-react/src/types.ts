@@ -5,6 +5,8 @@ export interface NodeRow {
   value: string | number | null | boolean;
   type: Node["type"];
   childrenCount?: number;
+  /** Rendered row height, including wrapped lines for long string values. */
+  height?: number;
   to?: string[];
 }
 
@@ -38,6 +40,8 @@ export interface EdgeData {
    * default exit point. `0` for single-row array container nodes.
    */
   fromRowIndex?: number;
+  /** Center of the source row relative to the node's row-content area. */
+  fromRowOffsetY?: number;
 }
 
 export interface GraphData {
