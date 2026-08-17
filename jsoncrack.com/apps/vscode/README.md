@@ -4,6 +4,9 @@ Read and edit **JSONL / NDJSON** files one line at a time. Put the cursor on a l
 that record opens as an interactive, warm-themed node graph — objects, arrays, and
 values as a connected diagram you can navigate and edit in place.
 
+[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=cyclone-mind.jsonl-vision)
+or run `code --install-extension cyclone-mind.jsonl-vision`.
+
 ## Features
 
 - **Per-line** — each line is its own graph in its own tab; move the cursor to open the

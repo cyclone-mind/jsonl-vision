@@ -3,6 +3,8 @@
 A VS Code extension that turns a single line of a `.jsonl` / `.ndjson` file into an
 interactive, editable node graph — one record at a time.
 
+[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=cyclone-mind.jsonl-vision)
+
 ## Why
 
 Inspecting one line of a big JSONL log usually means copying it out to a website and
@@ -23,16 +25,25 @@ written straight back to the file.
 - **Plain `.json` too** — the whole-file graph mode is retained.
 - **Fully offline** — nothing leaves your editor.
 
-## Install (local)
+## Install
 
-Not yet on the marketplace. Build a `.vsix` and install it:
+[JSONL Vision](https://marketplace.visualstudio.com/items?itemName=cyclone-mind.jsonl-vision)
+is on the Visual Studio Marketplace:
+
+```sh
+code --install-extension cyclone-mind.jsonl-vision
+```
+
+Or search **JSONL Vision** in the Extensions view (`Ctrl+Shift+X`).
+
+### Local `.vsix`
 
 ```sh
 pnpm install
 pnpm run --filter jsonl-vision... build   # or: pnpm run build:vscode (from jsoncrack.com/)
 cd jsoncrack.com/apps/vscode
 npx vsce package
-code --install-extension jsonl-vision-0.1.0.vsix
+code --install-extension jsonl-vision-0.1.1.vsix
 ```
 
 ## Layout
