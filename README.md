@@ -55,8 +55,11 @@ The upstream [JSON Crack](https://jsoncrack.com) monorepo is vendored under
 - [`jsoncrack.com/packages/jsoncrack-react`](jsoncrack.com/packages/jsoncrack-react) — the graph engine.
 - [`docs/adr/0001-jsonl-vision-architecture.md`](docs/adr/0001-jsonl-vision-architecture.md) — the design decisions and why.
 
-For extension development instructions, see
-[`jsoncrack.com/apps/vscode/README.md`](jsoncrack.com/apps/vscode/README.md).
+From-scratch guide (scaffold → debug → Marketplace):
+[`docs/develop-vscode-extension.md`](docs/develop-vscode-extension.md).
+
+This repo's build and release commands:
+[`jsoncrack.com/apps/vscode/DEVELOPMENT.md`](jsoncrack.com/apps/vscode/DEVELOPMENT.md).
 
 ## Credits & license
 
