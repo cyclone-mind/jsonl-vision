@@ -7,6 +7,17 @@ export interface ParseGraphResult extends GraphData {
   errors: ParseError[];
 }
 
+/** Thrown when `parseGraph` is asked to stop once the graph exceeds `limit` nodes. */
+export class GraphNodeLimitError extends Error {
+  readonly limit: number;
+
+  constructor(limit: number) {
+    super(`Graph node limit of ${limit} exceeded`);
+    this.name = "GraphNodeLimitError";
+    this.limit = limit;
+  }
+}
+
 /** Extra width reserved for a container row's collapse control (item 11/16). */
 const COLLAPSE_BTN_ALLOWANCE = 26;
 /** Horizontal padding reserved around the header label. */
@@ -26,7 +37,7 @@ const buildLabel = (path: JSONPath | undefined): string | undefined => {
   return String(last);
 };
 
-export const parseGraph = (json: string): ParseGraphResult => {
+export const parseGraph = (json: string, maxNodes?: number): ParseGraphResult => {
   const parseErrors: ParseError[] = [];
   const jsonTree = parseTree(json, parseErrors);
 
@@ -40,6 +51,12 @@ export const parseGraph = (json: string): ParseGraphResult => {
 
   const nodes: NodeData[] = [];
   const edges: EdgeData[] = [];
+  const pushNode = (node: NodeData) => {
+    nodes.push(node);
+    if (maxNodes !== undefined && nodes.length > maxNodes) {
+      throw new GraphNodeLimitError(maxNodes);
+    }
+  };
   let nodeId = 1;
   let edgeId = 1;
 
@@ -65,7 +82,7 @@ export const parseGraph = (json: string): ParseGraphResult => {
     if (isArray && isRootArray) {
       const { width, height } = calculateNodeSize(`[${node.children?.length ?? "0"} items]`);
 
-      nodes.push({
+      pushNode({
         id,
         text: [
           {
@@ -192,7 +209,7 @@ export const parseGraph = (json: string): ParseGraphResult => {
 
       const { width, height } = calculateNodeSize(node.value as string | number);
 
-      nodes.push({
+      pushNode({
         id,
         text: [
           {
@@ -248,7 +265,7 @@ export const parseGraph = (json: string): ParseGraphResult => {
         nodeHeight += HEADER_HEIGHT;
       }
 
-      nodes.push({
+      pushNode({
         id,
         text,
         width: nodeWidth,

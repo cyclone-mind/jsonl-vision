@@ -63,6 +63,14 @@ describe("parseJsonGraph", () => {
     expect(result.total).toBeGreaterThan(3);
   });
 
+  it("stops building nodes once the cap is exceeded", () => {
+    const wide = JSON.stringify(Array.from({ length: 40 }, (_, i) => i));
+    const result = parseJsonGraph(wide, 5);
+    // Root array plus the children built before the cap fired. Parsing does not
+    // continue through the remaining items.
+    expect(result).toEqual({ kind: "above-limit", total: 6 });
+  });
+
   // NOTE: the `kind: "error"` branch is only reached on unexpected internal
   // exceptions in `parseGraph` — jsonc-parser is error-tolerant, so there is
   // no user-reachable JSON input that triggers it. Kept as a safety net in

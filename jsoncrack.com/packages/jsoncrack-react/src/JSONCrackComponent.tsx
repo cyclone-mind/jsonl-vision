@@ -33,13 +33,13 @@ import {
   type JsonInput,
 } from "./canvasHelpers";
 import { CollapseContext, isNodeHidden, prunePaths } from "./components/CollapseContext";
-import { HEADER_HEIGHT } from "./layoutConstants";
 import { Controls } from "./components/Controls";
 import { CustomEdge } from "./components/CustomEdge";
 import { CustomNode } from "./components/CustomNode";
 import type { EditableScalar } from "./components/EditContext";
 import { EditContext } from "./components/EditContext";
 import { computeLaneIndices } from "./edgeLanes";
+import { HEADER_HEIGHT } from "./layoutConstants";
 import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData, NodeRect } from "./types";
 
 const layoutOptions = {
@@ -654,7 +654,7 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
             tooLargeContent
           ) : (
             <div className={styles.tooLarge}>
-              {`This graph has ${totalNodes} nodes and exceeds the maxRenderableNodes limit (${maxRenderableNodes}).`}
+              {`This JSON is larger than ${maxRenderableNodes} nodes, so it was not rendered.`}
             </div>
           ))}
 

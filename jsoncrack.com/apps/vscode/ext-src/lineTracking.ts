@@ -2,6 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import type { PathSegment, Scalar } from "./applyEdit";
 import { applyScalarEdit } from "./applyEdit";
+import { graphPayload } from "./jsonGuard";
 import { focusLineDecision } from "./lineFocus";
 import type { TextChange } from "./lineShift";
 import { shiftLineNumber } from "./lineShift";
@@ -266,8 +267,7 @@ class LineTrackingSession {
     const focusedText =
       this.state.focusedLine === null ? "" : this.lineText(this.state.focusedLine);
     this.panel.webview.postMessage({
-      json: focusedText,
-      // Consumed by the pill-tab UI (ADR action item 8); harmless until then.
+      ...graphPayload(focusedText, "line"),
       tabs: this.state.tabs,
       focusedLine: this.state.focusedLine,
     });
