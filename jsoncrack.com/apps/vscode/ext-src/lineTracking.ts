@@ -2,6 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import type { PathSegment, Scalar } from "./applyEdit";
 import { applyScalarEdit } from "./applyEdit";
+import { focusLineDecision } from "./lineFocus";
 import type { TextChange } from "./lineShift";
 import { shiftLineNumber } from "./lineShift";
 import type { LineTabsAction, LineTabsState } from "./lineTabs";
@@ -92,9 +93,15 @@ class LineTrackingSession {
 
   /** Move focus to a line, opening a tab for it if needed. Blank lines are ignored. */
   focusLine(line: number) {
-    if (line === this.lastFocusedLine) return;
     const content = this.lineText(line);
-    if (content.trim() === "") return; // JSONL has one record per non-empty line
+    const decision = focusLineDecision({
+      line,
+      content,
+      lastFocusedLine: this.lastFocusedLine,
+      focusedLine: this.state.focusedLine,
+      openLines: this.state.tabs.map(tab => tab.line),
+    });
+    if (decision !== "focus") return;
     this.lastFocusedLine = line;
     this.dispatch({ type: "FOCUS_LINE", line, content });
   }
@@ -125,6 +132,11 @@ class LineTrackingSession {
     switch (m.type) {
       case "clickTab":
         this.dispatch({ type: "CLICK_TAB", line: m.line });
+        // Remember this line before moving the editor cursor. The selection
+        // event that follows calls focusLine, which must see the tab as
+        // already focused instead of opening a second path onto it.
+        this.lastFocusedLine = m.line;
+        this.revealLine(m.line);
         break;
       case "closeTab":
         this.dispatch({ type: "CLOSE_TAB", line: m.line });
@@ -200,6 +212,40 @@ class LineTrackingSession {
     if (next === this.state) return;
     this.state = next;
     this.post();
+  }
+
+  /**
+   * Put the editor cursor on `line` so the graph tab and the text cursor stay
+   * on the same record. Visible editors are updated in place; a hidden
+   * document is shown without stealing focus from the webview.
+   */
+  private revealLine(line: number) {
+    const visible = vscode.window.visibleTextEditors.find(
+      editor => editor.document === this.document
+    );
+    if (visible) {
+      this.moveCursor(visible, line);
+      return;
+    }
+    void vscode.window
+      .showTextDocument(this.document, { preserveFocus: true, preview: false })
+      .then(
+        editor => this.moveCursor(editor, line),
+        () => undefined
+      );
+  }
+
+  private moveCursor(editor: vscode.TextEditor, line: number) {
+    if (editor.document !== this.document) return;
+    const last = Math.max(0, editor.document.lineCount - 1);
+    const target = Math.min(Math.max(line, 0), last);
+    if (editor.selection.active.line === target) return;
+    const position = new vscode.Position(target, 0);
+    editor.selection = new vscode.Selection(position, position);
+    editor.revealRange(
+      new vscode.Range(position, position),
+      vscode.TextEditorRevealType.InCenterIfOutsideViewport
+    );
   }
 
   /** Current text at a line, or "" if the line no longer exists (e.g. deleted). */
