@@ -1,6 +1,6 @@
 import * as esbuild from "esbuild";
 import { spawnSync } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 function collect(dir, acc = []) {
@@ -23,6 +23,9 @@ if (entryPoints.length === 0) {
   console.error("No unit tests found.");
   process.exit(1);
 }
+
+// Drop output from a previous branch so `node --test` cannot run stale bundles.
+rmSync("build/test", { recursive: true, force: true });
 
 await esbuild.build({
   entryPoints,
