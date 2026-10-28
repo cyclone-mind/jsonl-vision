@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ViewPort } from "react-zoomable-ui";
 import styles from "./JSONCrackStyles.module.css";
-import { parseGraph } from "./parser";
+import { GraphNodeLimitError, parseGraph } from "./parser";
 import { themes } from "./theme";
 import type { CanvasThemeMode, GraphData } from "./types";
 
@@ -87,12 +87,16 @@ export const parseJsonGraph = (
   maxRenderableNodes: number
 ): ParseJsonGraphResult => {
   try {
-    const graph = parseGraph(jsonText);
+    const graph = parseGraph(jsonText, maxRenderableNodes);
     if (graph.nodes.length > maxRenderableNodes) {
       return { kind: "above-limit", total: graph.nodes.length };
     }
     return { kind: "ok", graph, syntaxErrorCount: graph.errors.length };
   } catch (error) {
+    if (error instanceof GraphNodeLimitError) {
+      // `total` is a lower bound: parsing stopped at the first node past the cap.
+      return { kind: "above-limit", total: error.limit + 1 };
+    }
     return {
       kind: "error",
       error: error instanceof Error ? error : new Error("Unable to parse data."),

@@ -5,7 +5,6 @@
 // editor tabs or a vertical rail. Drift (ADR item 8) shows as an amber pill
 // with a refresh affordance. Right-clicking a pill opens a close menu
 // (close / others / to the left / to the right — ADR item 17).
-
 import { useEffect, useState } from "react";
 
 export interface TabStripTab {

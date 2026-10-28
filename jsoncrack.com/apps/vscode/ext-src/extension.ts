@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import { graphPayload } from "./jsonGuard";
 import { isJsonlDocument, startLineTracking } from "./lineTracking";
 import { createWebviewPanel } from "./webview";
 
@@ -39,28 +40,21 @@ async function createWebviewForSelectedText(context: vscode.ExtensionContext) {
     return;
   }
 
-  const selectedText = editor?.document.getText(editor.selection);
-
   // Create the webview panel and send the selected JSON content
   const panel = createWebviewPanel(context, getPanelTitle(editor?.document));
-  panel.webview.postMessage({
-    json: selectedText,
-  });
+  const postSelection = () => {
+    panel.webview.postMessage(
+      graphPayload(editor?.document.getText(editor.selection) ?? "", "selection")
+    );
+  };
+  postSelection();
 
   const onReceiveMessage = panel.webview.onDidReceiveMessage(e => {
-    if (e === "ready") {
-      panel.webview.postMessage({
-        json: selectedText,
-      });
-    }
+    if (e === "ready") postSelection();
   });
 
   const onTextChange = vscode.workspace.onDidChangeTextDocument(changeEvent => {
-    if (changeEvent.document === editor?.document) {
-      panel.webview.postMessage({
-        json: changeEvent.document.getText(editor?.selection),
-      });
-    }
+    if (changeEvent.document === editor?.document) postSelection();
   });
 
   const disposer = () => {
@@ -75,20 +69,16 @@ async function createWebviewForActiveEditor(context: vscode.ExtensionContext) {
   const editor = vscode.window.activeTextEditor;
   const panel = createWebviewPanel(context, getPanelTitle(editor?.document));
 
+  const postDocument = () => {
+    panel.webview.postMessage(graphPayload(editor?.document.getText() ?? "", "document"));
+  };
+
   const onReceiveMessage = panel.webview.onDidReceiveMessage(e => {
-    if (e === "ready") {
-      panel.webview.postMessage({
-        json: editor?.document.getText(),
-      });
-    }
+    if (e === "ready") postDocument();
   });
 
   const onTextChange = vscode.workspace.onDidChangeTextDocument(changeEvent => {
-    if (changeEvent.document === editor?.document) {
-      panel.webview.postMessage({
-        json: changeEvent.document.getText(),
-      });
-    }
+    if (changeEvent.document === editor?.document) postDocument();
   });
 
   const disposer = () => {
@@ -110,9 +100,7 @@ function createWebviewForContent(context?: vscode.ExtensionContext, content?: st
       context,
       getPanelTitle(vscode.window.activeTextEditor?.document)
     );
-    panel.webview.postMessage({
-      json: content,
-    });
+    panel.webview.postMessage(graphPayload(content, "document"));
   }
 }
 

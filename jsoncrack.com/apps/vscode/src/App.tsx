@@ -31,6 +31,8 @@ interface HostMessage {
   focusedLine?: number | null;
   // Pushed live when the jsonl-vision.background setting changes.
   background?: BackgroundSetting;
+  /** Set when the host refused to graph `json` (invalid, too deep, or too large). */
+  problem?: string | null;
 }
 
 const App: React.FC = () => {
@@ -39,6 +41,7 @@ const App: React.FC = () => {
   const [focusedLine, setFocusedLine] = useState<number | null>(null);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [background, setBackground] = useState<BackgroundSetting>(readInitialBackground);
+  const [problem, setProblem] = useState<string | null>(null);
   const theme = resolveTheme(background);
 
   useEffect(() => {
@@ -50,6 +53,11 @@ const App: React.FC = () => {
       if (typeof data?.json === "string") {
         setJson(data.json);
       }
+      if (data && typeof data === "object" && "problem" in data) {
+        const nextProblem = typeof data.problem === "string" && data.problem ? data.problem : null;
+        setProblem(nextProblem);
+        if (nextProblem) setSelectedNode(null);
+      }
       // JSONL mode sends the tab set; whole-document mode never does, so these
       // stay empty and the strip is not rendered.
       if (Array.isArray(data?.tabs)) {
@@ -57,7 +65,11 @@ const App: React.FC = () => {
         setFocusedLine(data.focusedLine ?? null);
       }
       // Live background-setting change pushed by the host.
-      if (data?.background === "auto" || data?.background === "dark" || data?.background === "warm") {
+      if (
+        data?.background === "auto" ||
+        data?.background === "dark" ||
+        data?.background === "warm"
+      ) {
         setBackground(data.background);
       }
     };
@@ -127,13 +139,19 @@ const App: React.FC = () => {
         />
       )}
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-        <JSONCrack
-          json={json}
-          theme={theme}
-          showControls={false}
-          onNodeClick={handleNodeClick}
-          onEditValue={editingEnabled ? editValue : undefined}
-        />
+        {problem ? (
+          <div className="jsonl-problem" role="status">
+            <p>{problem}</p>
+          </div>
+        ) : (
+          <JSONCrack
+            json={json}
+            theme={theme}
+            showControls={false}
+            onNodeClick={handleNodeClick}
+            onEditValue={editingEnabled ? editValue : undefined}
+          />
+        )}
       </div>
       {selectedNode && (
         <NodeModal opened={!!selectedNode} onClose={closeNodeModal} nodeData={selectedNode} />

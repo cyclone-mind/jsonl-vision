@@ -245,6 +245,24 @@ a {
   background: var(--vscode-button-secondaryHoverBackground, rgba(128, 128, 128, 0.3));
 }
 
+.jsonl-problem {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--vscode-foreground, #cccccc);
+  font-family: var(--vscode-font-family, "Segoe UI", system-ui, sans-serif);
+  font-size: 13px;
+  text-align: center;
+}
+
+.jsonl-problem p {
+  max-width: 520px;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .jsonl-modal-code {
   margin: 0;
   padding: 10px 12px;
