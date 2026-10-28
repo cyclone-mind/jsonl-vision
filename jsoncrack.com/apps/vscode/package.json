@@ -104,6 +104,7 @@
     "build:dev": "vite build && node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
     "watch:webview": "vite build --watch",
+    "test": "node scripts/run-unit-tests.mjs",
     "lint": "eslint src ext-src && prettier --check src ext-src",
     "lint:fix": "eslint --fix src ext-src && prettier --write src ext-src",
     "clean": "rm -rf build"

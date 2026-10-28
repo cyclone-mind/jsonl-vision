@@ -2,8 +2,10 @@ import * as path from "path";
 import * as vscode from "vscode";
 import type { PathSegment, Scalar } from "./applyEdit";
 import { applyScalarEdit } from "./applyEdit";
+import type { TextChange } from "./lineShift";
+import { shiftLineNumber } from "./lineShift";
 import type { LineTabsAction, LineTabsState } from "./lineTabs";
-import { createState, reduce } from "./lineTabs";
+import { applyLineShifts, createState, reduce } from "./lineTabs";
 import { createWebviewPanel } from "./webview";
 
 const JSONL_EXTENSIONS = new Set([".jsonl", ".ndjson", ".jsonlines"]);
@@ -72,7 +74,7 @@ class LineTrackingSession {
     vscode.workspace.onDidChangeTextDocument(
       e => {
         if (e.document !== this.document) return;
-        this.reconcileDrift();
+        this.reconcileDocument(e.contentChanges);
       },
       null,
       this.disposables
@@ -155,9 +157,30 @@ class LineTrackingSession {
     // snapshot and re-posts the graph, so no extra dispatch is needed here.
   }
 
-  /** After any document edit, re-check every open tab's line for drift (or live-sync). */
-  private reconcileDrift() {
-    let changed = false;
+  /**
+   * After a document edit, move anchors by the line delta, then re-check each
+   * surviving tab for drift (or live-sync the focused one). `contentChanges`
+   * describe the pre-edit document, which is also what `shiftLineNumber` expects.
+   * The document event is handled before any selection event from the same
+   * keystroke, so the cursor line observed afterwards is already in post-edit
+   * coordinates.
+   */
+  private reconcileDocument(changes: readonly vscode.TextDocumentContentChangeEvent[]) {
+    const mapped: TextChange[] = changes.map(change => ({
+      startLine: change.range.start.line,
+      startChar: change.range.start.character,
+      endLine: change.range.end.line,
+      endChar: change.range.end.character,
+      text: change.text,
+    }));
+
+    const shifted = applyLineShifts(this.state, mapped);
+    const nextCursorLine =
+      this.lastFocusedLine === null ? null : shiftLineNumber(this.lastFocusedLine, mapped);
+    let changed = shifted !== this.state || nextCursorLine !== this.lastFocusedLine;
+    this.state = shifted;
+    this.lastFocusedLine = nextCursorLine;
+
     for (const tab of [...this.state.tabs]) {
       const next = reduce(this.state, {
         type: "LINE_CHANGED",

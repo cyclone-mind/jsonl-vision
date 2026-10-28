@@ -1,3 +1,6 @@
+import type { TextChange } from "./lineShift";
+import { shiftLineNumber } from "./lineShift";
+
 // Pure line-anchored tab state for JSONL Vision.
 //
 // Lifted and adapted from the validated throwaway prototype at
@@ -129,4 +132,62 @@ export function reduce(state: LineTabsState, action: LineTabsAction): LineTabsSt
     default:
       return state;
   }
+}
+
+/**
+ * Move open tabs by the line delta of a document edit. A tab whose line was
+ * deleted is closed. Two tabs that land on one line (a join) keep the earlier
+ * record. Snapshots are left untouched so the following content reconcile can
+ * still tell drift from an in-place edit.
+ */
+export function applyLineShifts(
+  state: LineTabsState,
+  changes: readonly TextChange[]
+): LineTabsState {
+  if (changes.length === 0 || state.tabs.length === 0) return state;
+
+  const mapped = state.tabs.map(tab => ({
+    tab,
+    line: shiftLineNumber(tab.line, changes),
+  }));
+
+  // When a join maps two anchors onto one line, the earlier record is the one
+  // whose starting characters survived.
+  const survivorOriginal = new Map<number, number>();
+  for (const item of mapped) {
+    if (item.line === null) continue;
+    const previous = survivorOriginal.get(item.line);
+    if (previous === undefined || item.tab.line < previous) {
+      survivorOriginal.set(item.line, item.tab.line);
+    }
+  }
+
+  let tabsChanged = false;
+  const tabs: LineTab[] = [];
+  for (const item of mapped) {
+    if (item.line === null || survivorOriginal.get(item.line) !== item.tab.line) {
+      tabsChanged = true;
+      continue;
+    }
+    if (item.line === item.tab.line) tabs.push(item.tab);
+    else {
+      tabsChanged = true;
+      tabs.push({ ...item.tab, line: item.line });
+    }
+  }
+
+  let focusedLine = state.focusedLine;
+  if (focusedLine !== null) {
+    const focus = mapped.find(item => item.tab.line === focusedLine);
+    // A deleted line clears focus. A join focuses the surviving line, which is
+    // the same number the dropped anchor was mapped to.
+    const nextFocus = focus?.line ?? null;
+    if (nextFocus !== focusedLine) {
+      focusedLine = nextFocus;
+      tabsChanged = true;
+    }
+  }
+
+  if (!tabsChanged) return state;
+  return { tabs, focusedLine };
 }
