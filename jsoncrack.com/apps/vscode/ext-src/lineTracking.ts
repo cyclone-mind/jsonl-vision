@@ -7,6 +7,7 @@ import type { TextChange } from "./lineShift";
 import { shiftLineNumber } from "./lineShift";
 import type { LineTabsAction, LineTabsState } from "./lineTabs";
 import { applyLineShifts, createState, reduce } from "./lineTabs";
+import { describeEditFailure, normalizeDocumentLine, readScalarEdit } from "./lineText";
 import { createWebviewPanel } from "./webview";
 
 const JSONL_EXTENSIONS = new Set([".jsonl", ".ndjson", ".jsonlines"]);
@@ -120,10 +121,12 @@ class LineTrackingSession {
       value?: Scalar;
     };
 
-    // A scalar edit targets the focused line, not a tab id.
+    // A scalar edit targets the focused line, not a tab id. `readScalarEdit`
+    // rejects a missing or non-finite value instead of storing it as null.
+    const edit = readScalarEdit(msg);
     if (m.type === "editValue") {
-      if (this.state.focusedLine !== null && Array.isArray(m.path)) {
-        void this.applyEdit(this.state.focusedLine, m.path, m.value ?? null);
+      if (edit && this.state.focusedLine !== null) {
+        void this.applyEdit(this.state.focusedLine, edit.path, edit.value);
       }
       return;
     }
@@ -160,7 +163,11 @@ class LineTrackingSession {
   private async applyEdit(line: number, editPath: PathSegment[], value: Scalar) {
     const original = this.lineText(line);
     const result = applyScalarEdit(original, editPath, value);
-    if (!result.ok || result.text === original) return;
+    if (!result.ok) {
+      void vscode.window.showWarningMessage(describeEditFailure(result.reason));
+      return;
+    }
+    if (result.text === original) return;
 
     const edit = new vscode.WorkspaceEdit();
     edit.replace(this.document.uri, this.document.lineAt(line).range, result.text);
@@ -251,7 +258,7 @@ class LineTrackingSession {
   /** Current text at a line, or "" if the line no longer exists (e.g. deleted). */
   private lineText(line: number): string {
     if (line < 0 || line >= this.document.lineCount) return "";
-    return this.document.lineAt(line).text;
+    return normalizeDocumentLine(line, this.document.lineAt(line).text);
   }
 
   private post() {

@@ -18,14 +18,17 @@ interface EditableValueProps {
 
 type CoerceResult = { ok: true; value: EditableScalar } | { ok: false };
 
-/** Coerce the input text back to the row's original scalar type. */
-function coerce(input: string, type: NodeRow["type"]): CoerceResult {
+/**
+ * Coerce the input text back to the row's original scalar type.
+ * Non-finite numbers are rejected: `JSON.stringify` would persist them as `null`.
+ */
+export function coerceEditableScalar(input: string, type: NodeRow["type"]): CoerceResult {
   switch (type) {
     case "string":
       return { ok: true, value: input };
     case "number": {
       const n = Number(input);
-      if (input.trim() === "" || Number.isNaN(n)) return { ok: false };
+      if (input.trim() === "" || !Number.isFinite(n)) return { ok: false };
       return { ok: true, value: n };
     }
     case "boolean": {
@@ -40,7 +43,7 @@ function coerce(input: string, type: NodeRow["type"]): CoerceResult {
       if (t === "true") return { ok: true, value: true };
       if (t === "false") return { ok: true, value: false };
       const n = Number(t);
-      if (t !== "" && !Number.isNaN(n)) return { ok: true, value: n };
+      if (t !== "" && Number.isFinite(n)) return { ok: true, value: n };
       return { ok: true, value: input };
     }
   }
@@ -91,7 +94,7 @@ export const EditableValue = ({ path, value, valueType, children }: EditableValu
 
   // Enter: commit, but keep the input open and flagged if the value is invalid.
   const commit = () => {
-    const result = coerce(draft, valueType);
+    const result = coerceEditableScalar(draft, valueType);
     if (!result.ok) {
       setInvalid(true);
       return;
@@ -102,7 +105,7 @@ export const EditableValue = ({ path, value, valueType, children }: EditableValu
 
   // Blur: commit if valid, otherwise revert rather than trap focus.
   const commitOrCancel = () => {
-    const result = coerce(draft, valueType);
+    const result = coerceEditableScalar(draft, valueType);
     if (!result.ok) {
       cancel();
       return;
