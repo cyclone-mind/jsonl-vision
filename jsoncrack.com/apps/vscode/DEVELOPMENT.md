@@ -25,10 +25,21 @@ after changes.
 | `dev`                     | Vite dev server (standalone webview in a browser) |
 | `lint`                    | ESLint + Prettier                                 |
 
+## Release
+
+Push a tag `vX.Y.Z` that matches `version` in `apps/vscode/package.json` (for this
+release, `v0.2.0`). [`.github/workflows/release.yml`](../../../.github/workflows/release.yml)
+builds one `.vsix`, publishes it to the VS Code Marketplace (`VSCE_PAT`) and Open VSX
+(`OVSX_PAT`), and attaches it to the GitHub release. A missing secret skips that
+registry with a warning. Open VSX also needs the Eclipse publisher agreement and,
+once, `npx ovsx create-namespace cyclone-mind`. The root README "Release" section
+has the secret details. Do not create the tag from this doc's examples until that
+version is the one on `main`.
+
 ## Manual release (Windows PowerShell)
 
-Marketplace versions are immutable, so first raise `version` in `apps/vscode/package.json`
-(for example `0.1.1` → `0.1.2`). Then run:
+Use this only when the tag workflow cannot run. Marketplace versions are immutable,
+so first raise `version` in `apps/vscode/package.json`. Then run:
 
 ```powershell
 cd C:\path\to\Good_JSONL\jsoncrack.com
@@ -41,10 +52,14 @@ cd apps\vscode
 pnpm run vsc:package
 
 # Optional local smoke install before publishing:
-code --install-extension .\jsonl-vision-0.1.2.vsix
+code --install-extension .\jsonl-vision-0.2.0.vsix
 
 # Publish the exact package that was smoke-tested:
-.\node_modules\.bin\vsce.cmd publish --packagePath .\jsonl-vision-0.1.2.vsix
+.\node_modules\.bin\vsce.cmd publish --packagePath .\jsonl-vision-0.2.0.vsix
+
+# Open VSX, after the Eclipse publisher agreement is signed and the namespace exists.
+# OVSX_PAT must already be in the environment; do not paste it into the command.
+npx ovsx publish --packagePath .\jsonl-vision-0.2.0.vsix
 
 # Confirm the public Marketplace metadata/version:
 .\node_modules\.bin\vsce.cmd show cyclone-mind.jsonl-vision --json

@@ -1,11 +1,15 @@
 {
   "name": "jsonl-vision",
-  "version": "0.1.1",
-  "displayName": "JSONL Vision",
-  "description": "View and edit a single line of a JSONL/NDJSON file as an interactive, warm-themed node graph.",
+  "version": "0.2.0",
+  "displayName": "JSONL Vision: JSONL / NDJSON Graph View",
+  "description": "View and edit one JSONL, NDJSON, or JSON Lines record as a JSON Crack-style node graph. Value edits are written back to the file.",
   "publisher": "cyclone-mind",
   "license": "MIT",
   "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#211d1a",
+    "theme": "dark"
+  },
   "author": {
     "name": "JSONL Vision"
   },
@@ -16,17 +20,27 @@
   "bugs": {
     "url": "https://github.com/cyclone-mind/jsonl-vision/issues"
   },
+  "homepage": "https://github.com/cyclone-mind/jsonl-vision",
   "categories": [
-    "Visualization"
+    "Visualization",
+    "Data Science"
   ],
   "keywords": [
     "jsonl",
     "ndjson",
     "jsonlines",
+    "json lines",
     "json",
-    "visualizer",
+    "json crack",
     "graph",
-    "editor"
+    "visualizer",
+    "viewer",
+    "editor",
+    "dataset",
+    "llm",
+    "claude code",
+    "agent logs",
+    "logs"
   ],
   "activationEvents": [
     "workspaceContains:**/*.{json,jsonl,ndjson,jsonlines}"
@@ -71,7 +85,7 @@
       "editor/title": [
         {
           "command": "jsonl-vision.start",
-          "when": "resourceExtname == .json || resourceExtname == .jsonl || resourceExtname == .ndjson || resourceExtname == .jsonlines || editorLangId == json || editorLangId == jsonl",
+          "when": "resourceExtname =~ /^\\.(json|jsonl|ndjson|jsonlines)$/i || editorLangId == json || editorLangId == jsonl",
           "group": "navigation"
         }
       ]
@@ -92,7 +106,7 @@
             "Warm light (cream) background"
           ],
           "default": "auto",
-          "description": "Canvas background theme for JSONL Vision. Applies the next time a JSONL Vision panel is opened."
+          "description": "Canvas background theme for JSONL Vision. Open panels update immediately."
         }
       }
     }

@@ -217,7 +217,9 @@ Marketplace Overview = 扩展根目录 `README.md`。用户打开扩展页就会
 
 ## 9. 本仓库发版检查单
 
-对照 [`DEVELOPMENT.md`](../jsoncrack.com/apps/vscode/DEVELOPMENT.md)：
+优先推送与 `apps/vscode/package.json` 里 `version` 一致的 tag `v*.*.*`。仓库根目录 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 会打一次 `.vsix`，发布到 VS Code Marketplace（secret `VSCE_PAT`）和 Open VSX（secret `OVSX_PAT`），并把同一个 `.vsix` 挂到 GitHub release。某个 secret 没配时，这一步告警并跳过，另一步照常。Open VSX 还要先签 Eclipse publisher agreement，并执行一次 `npx ovsx create-namespace cyclone-mind`。细节在根目录 README 的 Release。不要在这里的例子上直接 `vsce publish` 同一版本，否则 tag 工作流会因为版本已存在而失败。
+
+下面是工作流不能跑时的手工清单，对照 [`DEVELOPMENT.md`](../jsoncrack.com/apps/vscode/DEVELOPMENT.md)：
 
 1. 升 `apps/vscode/package.json` 的 `version`。
 2. `pnpm install --frozen-lockfile`（在 `jsoncrack.com/`）。

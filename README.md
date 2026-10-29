@@ -1,49 +1,71 @@
 # JSONL Vision
 
-A VS Code extension that turns a single line of a `.jsonl` / `.ndjson` file into an
-interactive, editable node graph — one record at a time.
+Graph and edit one record of a JSONL, NDJSON, or JSON Lines file — a JSON Crack-style node graph, in the editor.
 
-[Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=cyclone-mind.jsonl-vision)
+[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cyclone-mind.jsonl-vision)
+·
+[Open VSX](https://open-vsx.org/extension/cyclone-mind/jsonl-vision)
 
-## Why
-
-Inspecting one line of a big JSONL log usually means copying it out to a website and
-pasting it into a JSON viewer. JSONL Vision does it in place: put the cursor on a line
-and that record renders as a warm-themed graph you can read and edit, with edits
-written straight back to the file.
-
-## Features
-
-- **Per-line JSONL** — each line opens as its own graph in its own tab; move the cursor
-  to a new line and a new tab opens.
-- **Inline editing** — double-click a scalar value, edit, and it's written back to the
-  file immediately.
-- **Readable graph** — depth-colored node headers, orthogonal connectors, inline color
-  swatches, collapsible objects, a dotted canvas.
-- **Warm theme** — dark or cream, following your VS Code theme or pinned via the
-  `jsonl-vision.background` setting.
-- **Plain `.json` too** — the whole-file graph mode is retained.
-- **Fully offline** — nothing leaves your editor.
-
-## Install
-
-[JSONL Vision](https://marketplace.visualstudio.com/items?itemName=cyclone-mind.jsonl-vision)
-is on the Visual Studio Marketplace:
+VS Code installs from the Marketplace. Cursor, Windsurf, and VSCodium users install from Open VSX.
 
 ```sh
 code --install-extension cyclone-mind.jsonl-vision
 ```
 
-Or search **JSONL Vision** in the Extensions view (`Ctrl+Shift+X`).
+<!-- TODO: replace the note below with a demo GIF at an https URL. Show a JSONL line opening as a graph, the cursor moving to another record, and a value edit written back. The Marketplace does not render relative paths or SVG. -->
+
+> **Demo:** GIF placeholder — recording not added yet.
+
+## Features
+
+- **Per-line graph** — each JSONL, NDJSON, or JSON Lines record opens as its own tab.
+- **Edit values** — double-click a scalar; the change is written back to that line. Edits that would corrupt the line are rejected.
+- **Cursor stays in sync** — the graph tab and the editor cursor follow the same record, including when lines above it are inserted or deleted.
+- **Clear failures** — invalid, too-deep, or oversized JSON explains why it was not graphed.
+- **JSON Crack-style canvas** — depth-colored headers, orthogonal connectors, collapsible objects, warm dark or cream theme.
+- **`.json` too** — a plain JSON file opens as one whole-file graph.
+- **Offline** — parsing and write-back stay in the editor.
+
+Changelog: [`jsoncrack.com/apps/vscode/CHANGELOG.md`](jsoncrack.com/apps/vscode/CHANGELOG.md).
+
+## Release
+
+Maintainers publish by pushing a git tag that matches `version` in
+[`jsoncrack.com/apps/vscode/package.json`](jsoncrack.com/apps/vscode/package.json).
+The tag `v0.2.0` runs [`.github/workflows/release.yml`](.github/workflows/release.yml):
+it builds one `.vsix`, publishes that file, and attaches it to the GitHub release.
+Do not create the tag until that version is on `main`. The workflow does not publish
+anything on its own until the tag is pushed, and it does not create the tag.
+
+Add these repository secrets before the first tagged release
+([Settings → Secrets and variables → Actions](https://github.com/cyclone-mind/jsonl-vision/settings/secrets/actions)):
+
+| Secret     | Registry                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| `VSCE_PAT` | VS Code Marketplace. Azure DevOps personal access token with **Marketplace → Manage**, organization **All accessible organizations**. `vsce publish` reads it from the environment. |
+| `OVSX_PAT` | Open VSX access token from [open-vsx.org tokens](https://open-vsx.org/user-settings/tokens). `npx ovsx publish` reads it from the environment. |
+
+If a secret is missing, that publish logs a warning and is skipped. The other
+registry and the GitHub release still run.
+
+Open VSX also requires, once per publisher:
+
+1. Sign the Eclipse publisher agreement (Open VSX prompts for this on the account).
+2. Create the namespace: `npx ovsx create-namespace cyclone-mind` (uses `OVSX_PAT`).
+
+The `cyclone-mind` namespace must exist before the first Open VSX publish. The
+listing at the Open VSX link above is empty until that publish succeeds.
+
+The extension id on both registries is `cyclone-mind.jsonl-vision`.
 
 ### Local `.vsix`
 
 ```sh
-pnpm install
-pnpm run --filter jsonl-vision... build   # or: pnpm run build:vscode (from jsoncrack.com/)
-cd jsoncrack.com/apps/vscode
-npx vsce package
-code --install-extension jsonl-vision-0.1.1.vsix
+cd jsoncrack.com
+pnpm install --frozen-lockfile
+pnpm --filter jsoncrack-react run build
+pnpm --filter jsonl-vision run vsc:package
+code --install-extension apps/vscode/jsonl-vision-0.2.0.vsix
 ```
 
 ## Layout

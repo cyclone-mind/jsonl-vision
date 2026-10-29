@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# The pnpm workspace is jsoncrack.com/, not the repository root.
+defaults:
+  run:
+    working-directory: jsoncrack.com
+
+jobs:
+  ci:
+    name: Test, lint, and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: jsoncrack.com/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Package the extension
+        run: |
+          set -euo pipefail
+          pnpm --filter jsoncrack-react run build
+          pnpm --filter jsonl-vision run vsc:package
+          version="$(node -p "require('./apps/vscode/package.json').version")"
+          vsix="apps/vscode/jsonl-vision-${version}.vsix"
+          if [ ! -f "$vsix" ]; then
+            echo "::error::vsce package did not produce ${vsix}"
+            exit 1
+          fi
+
+      - name: Upload the VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: jsonl-vision-vsix
+          path: jsoncrack.com/apps/vscode/jsonl-vision-*.vsix
+          if-no-files-found: error
