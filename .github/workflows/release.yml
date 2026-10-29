@@ -5,8 +5,14 @@ on:
     tags:
       - "v*.*.*"
 
+# Marketplace Trusted Publishing policy "jsonl-vision release" matches
+# .github/workflows/release.yml with an empty GitHub environment. Do not set
+# a job environment: that changes the OIDC subject and the exchange fails.
+# id-token: write lets vsce request the GitHub OIDC token. contents: write
+# lets this job create the GitHub release.
 permissions:
   contents: write
+  id-token: write
 
 # The pnpm workspace is jsoncrack.com/, not the repository root.
 defaults:
@@ -63,31 +69,18 @@ jobs:
           fi
           echo "vsix=${GITHUB_WORKSPACE}/jsoncrack.com/${vsix}" >> "$GITHUB_OUTPUT"
 
-      # A missing secret skips this step. The Open VSX step and the GitHub
-      # release still run. ovsx 1.3.0 treats a .vsix --packagePath as an
-      # already-built package, so both registries get this same file.
-      - name: Check VSCE_PAT
-        id: vsce_pat
-        if: always() && steps.package.outcome == 'success'
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: |
-          set -euo pipefail
-          if [ -n "${VSCE_PAT:-}" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=VS Code Marketplace skipped::VSCE_PAT is not set. Skipping vsce publish. Add the VSCE_PAT repository secret (Azure DevOps PAT with Marketplace Manage) and re-run this workflow to publish there."
-          fi
-
+      # Trusted Publishing: vsce 4.1.0 exchanges one GitHub OIDC token
+      # (audience marketplace.visualstudio.com) for a short-lived Marketplace
+      # credential. --oidc and --packagePath are both supported; --oidc does
+      # not fall back to a PAT. Do not set VSCE_PAT here — the CLI rejects
+      # --oidc together with --pat. ovsx 1.3.0 treats a .vsix --packagePath
+      # as an already-built package, so both registries get this same file.
       - name: Publish to the VS Code Marketplace
-        if: always() && steps.package.outcome == 'success' && steps.vsce_pat.outputs.present == 'true'
-        working-directory: jsoncrack.com/apps/vscode
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        if: always() && steps.package.outcome == 'success'
         run: |
           set -euo pipefail
-          pnpm exec vsce publish --packagePath "${{ steps.package.outputs.vsix }}"
+          unset VSCE_PAT
+          npx --yes @vscode/vsce@4.1.0 publish --packagePath "${{ steps.package.outputs.vsix }}" --oidc
 
       - name: Check OVSX_PAT
         id: ovsx_pat

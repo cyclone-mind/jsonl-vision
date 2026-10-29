@@ -217,7 +217,7 @@ Marketplace Overview = 扩展根目录 `README.md`。用户打开扩展页就会
 
 ## 9. 本仓库发版检查单
 
-优先推送与 `apps/vscode/package.json` 里 `version` 一致的 tag `v*.*.*`。仓库根目录 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 会打一次 `.vsix`，发布到 VS Code Marketplace（secret `VSCE_PAT`）和 Open VSX（secret `OVSX_PAT`），并把同一个 `.vsix` 挂到 GitHub release。某个 secret 没配时，这一步告警并跳过，另一步照常。Open VSX 还要先签 Eclipse publisher agreement，并执行一次 `npx ovsx create-namespace cyclone-mind`。细节在根目录 README 的 Release。不要在这里的例子上直接 `vsce publish` 同一版本，否则 tag 工作流会因为版本已存在而失败。
+优先推送与 `apps/vscode/package.json` 里 `version` 一致的 tag `v*.*.*`。仓库根目录 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 会打一次 `.vsix`，用 Marketplace Trusted Publishing（`vsce publish --oidc`，不需要 `VSCE_PAT`；job 要 `id-token: write`，且不能设 GitHub environment，因为 publisher `cyclone-mind` 的策略 `jsonl-vision release` 信任的是空 environment）发到 VS Code Marketplace，用 secret `OVSX_PAT` 发到 Open VSX，并把同一个 `.vsix` 挂到 GitHub release。`OVSX_PAT` 没配时 Open VSX 告警并跳过，Marketplace 和 GitHub release 照常。Open VSX 还要先签 Eclipse publisher agreement，并执行一次 `npx ovsx create-namespace cyclone-mind` 认领 `cyclone-mind` namespace。细节在根目录 README 的 Release。不要在这里的例子上直接 `vsce publish` 同一版本，否则 tag 工作流会因为版本已存在而失败。
 
 下面是工作流不能跑时的手工清单，对照 [`DEVELOPMENT.md`](../jsoncrack.com/apps/vscode/DEVELOPMENT.md)：
 

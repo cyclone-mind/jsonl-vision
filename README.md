@@ -37,24 +37,33 @@ it builds one `.vsix`, publishes that file, and attaches it to the GitHub releas
 Do not create the tag until that version is on `main`. The workflow does not publish
 anything on its own until the tag is pushed, and it does not create the tag.
 
-Add these repository secrets before the first tagged release
+The VS Code Marketplace step uses [Trusted Publishing](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publish-with-github-actions-and-trusted-publishing):
+`npx @vscode/vsce publish --packagePath <vsix> --oidc`. Publisher `cyclone-mind`
+policy `jsonl-vision release` trusts GitHub Actions in this repository, workflow
+`release.yml`, with no GitHub environment. The job has `id-token: write` and
+does not read `VSCE_PAT`. Do not add a job `environment:` — the policy's
+environment is empty, and a name would change the OIDC subject. On a private
+repository, the first successful token exchange has to happen within 48 hours
+of creating the policy or the policy does not stay active.
+
+Open VSX is still token-based. Add this repository secret before the first
+Open VSX publish
 ([Settings → Secrets and variables → Actions](https://github.com/cyclone-mind/jsonl-vision/settings/secrets/actions)):
 
-| Secret     | Registry                                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------- |
-| `VSCE_PAT` | VS Code Marketplace. Azure DevOps personal access token with **Marketplace → Manage**, organization **All accessible organizations**. `vsce publish` reads it from the environment. |
+| Secret     | Registry                                                                                                                     |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `OVSX_PAT` | Open VSX access token from [open-vsx.org tokens](https://open-vsx.org/user-settings/tokens). `npx ovsx publish` reads it from the environment. |
 
-If a secret is missing, that publish logs a warning and is skipped. The other
-registry and the GitHub release still run.
+If `OVSX_PAT` is missing, Open VSX publish logs a warning and is skipped. The
+Marketplace publish and the GitHub release still run.
 
 Open VSX also requires, once per publisher:
 
 1. Sign the Eclipse publisher agreement (Open VSX prompts for this on the account).
-2. Create the namespace: `npx ovsx create-namespace cyclone-mind` (uses `OVSX_PAT`).
+2. Claim the namespace: `npx ovsx create-namespace cyclone-mind` (uses `OVSX_PAT`).
 
-The `cyclone-mind` namespace must exist before the first Open VSX publish. The
-listing at the Open VSX link above is empty until that publish succeeds.
+The `cyclone-mind` namespace must be claimed before the first Open VSX publish.
+The listing at the Open VSX link above is empty until that publish succeeds.
 
 The extension id on both registries is `cyclone-mind.jsonl-vision`.
 
