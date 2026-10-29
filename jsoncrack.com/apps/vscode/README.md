@@ -57,23 +57,27 @@ Maintainers publish by pushing a git tag that matches `version` in this
 it builds one `.vsix`, publishes that file, and attaches it to the GitHub release.
 This workflow does not create the tag.
 
-Add these repository secrets before the first tagged release
+The VS Code Marketplace step uses Trusted Publishing (`vsce publish --oidc`).
+Publisher `cyclone-mind` policy `jsonl-vision release` trusts this repository's
+`release.yml` workflow with no GitHub environment, so the workflow does not use
+`VSCE_PAT`. Do not add a job `environment:` or the OIDC subject will not match.
+
+Open VSX still needs a token. Add this repository secret
 ([Actions secrets](https://github.com/cyclone-mind/jsonl-vision/settings/secrets/actions)):
 
-| Secret     | Registry                                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------- |
-| `VSCE_PAT` | VS Code Marketplace. Azure DevOps personal access token with **Marketplace → Manage** (all accessible organizations). `vsce publish` reads it from the environment. |
-| `OVSX_PAT` | Open VSX access token. `npx ovsx publish` reads it from the environment.                                     |
+| Secret     | Registry                                                                          |
+| ---------- | --------------------------------------------------------------------------------- |
+| `OVSX_PAT` | Open VSX access token. `npx ovsx publish` reads it from the environment.         |
 
-If a secret is missing, that publish logs a warning and is skipped. The other
-registry and the GitHub release still run.
+If `OVSX_PAT` is missing, Open VSX publish logs a warning and is skipped. The
+Marketplace publish and the GitHub release still run.
 
 Open VSX also requires, once per publisher:
 
 1. Sign the Eclipse publisher agreement (Open VSX prompts for this on the account).
-2. Create the namespace: `npx ovsx create-namespace cyclone-mind` (uses `OVSX_PAT`).
+2. Claim the namespace: `npx ovsx create-namespace cyclone-mind` (uses `OVSX_PAT`).
 
-The `cyclone-mind` namespace must exist before the first Open VSX publish. The
-Open VSX page is empty until that publish succeeds.
+The `cyclone-mind` namespace must be claimed before the first Open VSX publish.
+The Open VSX page is empty until that publish succeeds.
 
 Changelog: [CHANGELOG.md](CHANGELOG.md).

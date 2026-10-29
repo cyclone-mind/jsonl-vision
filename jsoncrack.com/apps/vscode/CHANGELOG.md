@@ -5,7 +5,7 @@
 ### Added
 
 - CI (`.github/workflows/ci.yml`) runs `pnpm test`, `pnpm run lint`, and `vsce package` on pushes to `main` and on pull requests, and uploads the `.vsix`.
-- Pushing a `v*.*.*` tag (`.github/workflows/release.yml`) builds that `.vsix` once, publishes it to the VS Code Marketplace and Open VSX, and attaches it to a GitHub release. A missing `VSCE_PAT` or `OVSX_PAT` skips that registry with a warning. The other publish and the GitHub release still run.
+- Pushing a `v*.*.*` tag (`.github/workflows/release.yml`) builds that `.vsix` once, publishes it to the VS Code Marketplace with Trusted Publishing (`vsce publish --oidc`, no `VSCE_PAT`) and to Open VSX (`OVSX_PAT`), and attaches it to a GitHub release. A missing `OVSX_PAT` skips Open VSX with a warning. The Marketplace publish and the GitHub release still run.
 - Marketplace listing: a searchable name and description (JSONL, NDJSON, JSON Lines, JSON Crack-style graph, value editing), keywords, the Data Science category, a gallery banner, and a homepage.
 
 ### Fixed
