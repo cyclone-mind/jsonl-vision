@@ -29,12 +29,14 @@ after changes.
 
 Push a tag `vX.Y.Z` that matches `version` in `apps/vscode/package.json` (for this
 release, `v0.2.0`). [`.github/workflows/release.yml`](../../../.github/workflows/release.yml)
-builds one `.vsix`, publishes it to the VS Code Marketplace (`VSCE_PAT`) and Open VSX
-(`OVSX_PAT`), and attaches it to the GitHub release. A missing secret skips that
-registry with a warning. Open VSX also needs the Eclipse publisher agreement and,
-once, `npx ovsx create-namespace cyclone-mind`. The root README "Release" section
-has the secret details. Do not create the tag from this doc's examples until that
-version is the one on `main`.
+builds one `.vsix`, publishes it to the VS Code Marketplace with Trusted Publishing
+(`vsce publish --oidc`, no `VSCE_PAT`; the job needs `id-token: write` and must not
+set a GitHub environment) and to Open VSX (`OVSX_PAT`), and attaches it to the
+GitHub release. A missing `OVSX_PAT` skips Open VSX with a warning. Open VSX also
+needs the Eclipse publisher agreement and, once, `npx ovsx create-namespace cyclone-mind`
+to claim the `cyclone-mind` namespace. The root README "Release" section has the
+details. Do not create the tag from this doc's examples until that version is the
+one on `main`.
 
 ## Manual release (Windows PowerShell)
 
