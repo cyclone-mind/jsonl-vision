@@ -27,3 +27,20 @@ export function focusLineDecision(input: {
   }
   return "focus";
 }
+
+/**
+ * Next or previous non-empty line. Blank lines are not records. `direction`
+ * is `1` (toward the end) or `-1`. Returns null at the ends of the document.
+ */
+export function adjacentNonEmptyLine(
+  from: number,
+  direction: 1 | -1,
+  lineCount: number,
+  textAt: (line: number) => string
+): number | null {
+  if (direction !== 1 && direction !== -1) return null;
+  for (let line = from + direction; line >= 0 && line < lineCount; line += direction) {
+    if (textAt(line).trim() !== "") return line;
+  }
+  return null;
+}

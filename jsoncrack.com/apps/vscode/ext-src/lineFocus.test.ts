@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { focusLineDecision } from "./lineFocus";
+import { adjacentNonEmptyLine, focusLineDecision } from "./lineFocus";
 
 const base = {
   line: 5,
@@ -37,5 +37,32 @@ describe("focusLineDecision", () => {
 
   it("still focuses a line that is a JSON string of spaces", () => {
     assert.equal(focusLineDecision({ ...base, line: 6, content: '"   "' }), "focus");
+  });
+});
+
+describe("adjacentNonEmptyLine", () => {
+  const lines = ["", '{"a":1}', "   ", '{"b":2}', ""];
+
+  it("skips blank lines in both directions and stops at the ends", () => {
+    assert.equal(
+      adjacentNonEmptyLine(0, 1, lines.length, line => lines[line]),
+      1
+    );
+    assert.equal(
+      adjacentNonEmptyLine(1, 1, lines.length, line => lines[line]),
+      3
+    );
+    assert.equal(
+      adjacentNonEmptyLine(3, -1, lines.length, line => lines[line]),
+      1
+    );
+    assert.equal(
+      adjacentNonEmptyLine(1, -1, lines.length, line => lines[line]),
+      null
+    );
+    assert.equal(
+      adjacentNonEmptyLine(3, 1, lines.length, line => lines[line]),
+      null
+    );
   });
 });

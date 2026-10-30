@@ -151,6 +151,11 @@ export interface JSONCrackProps {
    * omitted the graph is read-only, matching upstream JSON Crack.
    */
   onEditValue?: (path: JSONPath, newValue: EditableScalar) => void;
+  /**
+   * Optional per-leaf edit gate. Return false to keep that scalar read-only
+   * while other leaves stay editable. Ignored when `onEditValue` is omitted.
+   */
+  isPathEditable?: (path: JSONPath) => boolean;
 }
 
 /** Interactive JSON-to-graph visualization. Forwards a `JSONCrackRef` for imperative viewport control. */
@@ -176,6 +181,7 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       onToggleCollapse: controlledOnToggle,
       onCollapseChange,
       onEditValue,
+      isPathEditable,
     },
     ref
   ) => {
@@ -411,10 +417,10 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       [collapsedSet, wrappedToggleCollapse]
     );
 
-    const editContextValue = useMemo<{ onEditValue?: JSONCrackProps["onEditValue"] }>(
-      () => ({ onEditValue }),
-      [onEditValue]
-    );
+    const editContextValue = useMemo<{
+      onEditValue?: JSONCrackProps["onEditValue"];
+      isPathEditable?: JSONCrackProps["isPathEditable"];
+    }>(() => ({ onEditValue, isPathEditable }), [onEditValue, isPathEditable]);
 
     const collapsedPathsRef = useRef(collapsedPaths);
     collapsedPathsRef.current = collapsedPaths;

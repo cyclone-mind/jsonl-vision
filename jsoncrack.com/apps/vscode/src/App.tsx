@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { NodeData } from "jsoncrack-react";
 import { JSONCrack } from "jsoncrack-react";
 import { NodeModal } from "./components/NodeModal";
+import type { SessionBarState } from "./components/SessionBar";
+import { SessionBar } from "./components/SessionBar";
 import type { TabStripTab } from "./components/TabStrip";
 import { TabStrip } from "./components/TabStrip";
 import { getVsCodeApi } from "./vscodeApi";
@@ -33,6 +35,8 @@ interface HostMessage {
   background?: BackgroundSetting;
   /** Set when the host refused to graph `json` (invalid, too deep, or too large). */
   problem?: string | null;
+  /** Agent session chrome. Null in raw JSONL / whole-document mode. */
+  session?: SessionBarState | null;
 }
 
 const App: React.FC = () => {
@@ -42,6 +46,7 @@ const App: React.FC = () => {
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [background, setBackground] = useState<BackgroundSetting>(readInitialBackground);
   const [problem, setProblem] = useState<string | null>(null);
+  const [session, setSession] = useState<SessionBarState | null>(null);
   const theme = resolveTheme(background);
 
   useEffect(() => {
@@ -71,6 +76,9 @@ const App: React.FC = () => {
         data?.background === "warm"
       ) {
         setBackground(data.background);
+      }
+      if (data && typeof data === "object" && "session" in data) {
+        setSession(data.session ?? null);
       }
     };
 
@@ -120,6 +128,43 @@ const App: React.FC = () => {
     []
   );
 
+  const isPathEditable = useCallback(
+    (path: (string | number)[]) => {
+      const locked = session?.lockedPaths ?? [];
+      return !locked.some(
+        prefix =>
+          prefix.length <= path.length && prefix.every((segment, index) => segment === path[index])
+      );
+    },
+    [session]
+  );
+
+  const navigate = useCallback((direction: "prev" | "next") => {
+    getVsCodeApi()?.postMessage({ type: "navigate", direction });
+  }, []);
+
+  const toggleSession = useCallback(() => {
+    getVsCodeApi()?.postMessage({ type: "toggleAgentSession" });
+  }, []);
+
+  useEffect(() => {
+    if (!session?.enabled) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.altKey) return;
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (event.key === "ArrowLeft" && session.canPrev) {
+        event.preventDefault();
+        getVsCodeApi()?.postMessage({ type: "navigate", direction: "prev" });
+      } else if (event.key === "ArrowRight" && session.canNext) {
+        event.preventDefault();
+        getVsCodeApi()?.postMessage({ type: "navigate", direction: "next" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [session]);
+
   // Inline editing is only wired up in JSONL line-tracking mode (the host only
   // handles editValue there); plain .json stays read-only.
   const editingEnabled = tabs.length > 0;
@@ -138,6 +183,14 @@ const App: React.FC = () => {
           onCloseOthers={closeOtherTabs}
         />
       )}
+      {session && (
+        <SessionBar
+          session={session}
+          onPrev={() => navigate("prev")}
+          onNext={() => navigate("next")}
+          onToggle={toggleSession}
+        />
+      )}
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
         {problem ? (
           <div className="jsonl-problem" role="status">
@@ -150,6 +203,7 @@ const App: React.FC = () => {
             showControls={false}
             onNodeClick={handleNodeClick}
             onEditValue={editingEnabled ? editValue : undefined}
+            isPathEditable={session?.enabled ? isPathEditable : undefined}
           />
         )}
       </div>

@@ -121,6 +121,98 @@ export function applyScalarEdit(
   return { ok: true, text: JSON.stringify(root) };
 }
 
+/**
+ * One step of a write that may pass through a string field whose text is JSON.
+ * `parseString` means the value at `key` is a JSON string: parse it and keep
+ * walking inside the parsed value, then stringify that value back into the
+ * same field. The last step is the scalar being replaced and is not parsed.
+ */
+export interface WalkStep {
+  key: PathSegment;
+  parseString: boolean;
+}
+
+/**
+ * Like `applyScalarEdit`, but a step may address a JSON value that is stored
+ * as a string. Only those string fields are re-serialized; a sibling string
+ * stays a string. An empty walk replaces a root scalar and refuses a root
+ * object, matching `applyScalarEdit`.
+ */
+export function applyWalkEdit(
+  lineText: string,
+  walk: readonly WalkStep[],
+  value: Scalar
+): ApplyEditResult {
+  if (!isJsonScalar(value)) return { ok: false, reason: "bad-value" };
+  if (
+    walk.some(
+      step =>
+        !step ||
+        typeof step.parseString !== "boolean" ||
+        !isPathSegment(step.key) ||
+        (step.parseString && step === walk[walk.length - 1])
+    )
+  ) {
+    return { ok: false, reason: "bad-path" };
+  }
+  if (walk.every(step => !step.parseString)) {
+    return applyScalarEdit(
+      lineText,
+      walk.map(step => step.key),
+      value
+    );
+  }
+
+  let root: unknown;
+  try {
+    root = JSON.parse(lineText);
+  } catch {
+    return { ok: false, reason: "invalid-json" };
+  }
+
+  interface StringFrame {
+    parent: object;
+    key: PathSegment;
+    parsed: object;
+  }
+
+  const frames: StringFrame[] = [];
+  let cursor: unknown = root;
+  for (let i = 0; i < walk.length - 1; i += 1) {
+    const step = walk[i];
+    if (cursor === null || typeof cursor !== "object") return { ok: false, reason: "bad-path" };
+    const child = readOwn(cursor, step.key);
+    if (child === NOT_OWN) return { ok: false, reason: "bad-path" };
+    if (step.parseString) {
+      if (typeof child !== "string") return { ok: false, reason: "bad-path" };
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(child);
+      } catch {
+        return { ok: false, reason: "bad-path" };
+      }
+      if (parsed === null || typeof parsed !== "object") return { ok: false, reason: "bad-path" };
+      frames.push({ parent: cursor, key: step.key, parsed });
+      cursor = parsed;
+    } else {
+      cursor = child;
+    }
+  }
+
+  const last = walk[walk.length - 1];
+  if (cursor === null || typeof cursor !== "object") return { ok: false, reason: "bad-path" };
+  const current = readOwn(cursor, last.key);
+  if (current === NOT_OWN || !isLeaf(current)) return { ok: false, reason: "bad-path" };
+  writeOwn(cursor, last.key, value);
+
+  // Inner strings first, so each outer stringify sees the updated text.
+  for (let i = frames.length - 1; i >= 0; i -= 1) {
+    const frame = frames[i];
+    writeOwn(frame.parent, frame.key, JSON.stringify(frame.parsed));
+  }
+  return { ok: true, text: JSON.stringify(root) };
+}
+
 /** Validate a webview `editValue` message. A missing value is not stored as null. */
 export function readScalarEdit(message: unknown): ScalarEdit | null {
   if (!message || typeof message !== "object") return null;

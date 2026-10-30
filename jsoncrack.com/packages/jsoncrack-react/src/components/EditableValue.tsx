@@ -56,13 +56,13 @@ export function coerceEditableScalar(input: string, type: NodeRow["type"]): Coer
  * renders its children verbatim and the node stays read-only.
  */
 export const EditableValue = ({ path, value, valueType, children }: EditableValueProps) => {
-  const { onEditValue } = useEditContext();
+  const { onEditValue, isPathEditable } = useEditContext();
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState("");
   const [invalid, setInvalid] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
-  const editable = !!onEditValue;
+  const editable = !!onEditValue && (isPathEditable ? isPathEditable(path) : true);
   const multiline = valueType === "string" && String(value).includes("\n");
   const setInputRef = React.useCallback(
     (element: HTMLInputElement | HTMLTextAreaElement | null) => {

@@ -12,6 +12,12 @@ export interface EditContextValue {
    * (the graph stays read-only, as upstream JSON Crack is).
    */
   onEditValue?: (path: JSONPath, newValue: EditableScalar) => void;
+  /**
+   * When set, a leaf is editable only if this returns true. Used to keep
+   * paired or truncated session-view values read-only. Absent means every
+   * scalar is editable whenever `onEditValue` is set.
+   */
+  isPathEditable?: (path: JSONPath) => boolean;
 }
 
 const EMPTY: EditContextValue = {};
