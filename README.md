@@ -85,6 +85,7 @@ Edits still write back to that line. A value inside a parsed JSON string is writ
 | ------------------------------------ | ------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `jsonl-vision.background`            | `auto` · `dark` · `warm` | `auto`  | Canvas background: follow the VS Code theme, warm dark (charcoal), or warm light (cream). Open panels update immediately.                                            |
 | `jsonl-vision.detectAgentSessions`   | `true` · `false`         | `true`  | Sniff Claude Code and Codex CLI session logs and open them in agent session mode. Turn off to always graph raw JSONL. The toggle command still switches the open file. |
+| `jsonl-vision.layoutDirection`       | `right` · `down`         | `right` | Graph direction: left to right, or top to bottom. Rotate Layout and the Top-down button update this for the workspace when one is open, otherwise for you. Open panels update immediately. |
 
 ## Privacy
 
@@ -100,7 +101,7 @@ an independent project, not affiliated with or endorsed by JSON Crack.
 ## Release
 
 Maintainers publish by pushing a git tag that matches `version` in
-`package.json`. The tag `v0.3.0` runs
+`package.json`. The tag `v0.4.0` runs
 [`.github/workflows/release.yml`](https://github.com/cyclone-mind/jsonl-vision/blob/main/.github/workflows/release.yml):
 it builds one `.vsix`, publishes that file, and attaches it to the GitHub release.
 This workflow does not create the tag.
