@@ -8,6 +8,8 @@
 - Search across JSONL lines from that box. Next and previous line scan the file text and do not parse every record.
 - **JSONL Vision: Go to Line** opens a JSONL record by line number.
 - Previous and next record (Alt+Left / Alt+Right and buttons) work on plain JSONL files as well as in agent session mode.
+- Export the current graph as PNG (theme background or transparent) or SVG. The file dialog defaults to the source name plus the line number. Copy Graph as PNG puts the image on the clipboard. Exports cover the whole graph and are scaled down if they would exceed the size cap.
+- Collapse all / Expand all, and Rotate Layout (left-to-right or top-to-bottom). The direction is stored in `jsonl-vision.layoutDirection`.
 
 ## 0.3.0 — 2026-10-30
 

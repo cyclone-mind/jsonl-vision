@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSONCrackRef, NodeData } from "jsoncrack-react";
 import { JSONCrack } from "jsoncrack-react";
+import { blobToBase64, captureGraph } from "./captureGraph";
 import { GraphSearch } from "./components/GraphSearch";
+import type { LayoutDirection } from "./components/GraphToolbar";
+import { GraphToolbar } from "./components/GraphToolbar";
 import { NodeModal } from "./components/NodeModal";
 import type { RecordNavState } from "./components/RecordNav";
 import { RecordNav } from "./components/RecordNav";
@@ -23,6 +26,10 @@ function readInitialBackground(): BackgroundSetting {
 /** Resolve the graph palette from the background setting. "dark"/"warm" pin a
  *  palette (warm = the "light" cream one); "auto" (or the standalone dev server,
  *  which has no override) follows the VS Code theme. */
+function readInitialLayout(): LayoutDirection {
+  return document.body.getAttribute("data-jsonl-layout") === "DOWN" ? "DOWN" : "RIGHT";
+}
+
 function resolveTheme(background: BackgroundSetting) {
   if (background === "dark") return "dark" as const;
   if (background === "warm") return "light" as const;
@@ -43,6 +50,9 @@ interface HostMessage {
   session?: SessionBarState | null;
   /** Present in JSONL line mode, including when agent session mode is off. */
   record?: RecordNavState | null;
+  layoutDirection?: LayoutDirection;
+  type?: string;
+  action?: string;
 }
 
 const App: React.FC = () => {
@@ -58,7 +68,12 @@ const App: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [layout, setLayout] = useState<LayoutDirection>(readInitialLayout);
+  const [collapsed, setCollapsed] = useState(false);
+  const [toolbarStatus, setToolbarStatus] = useState<string | null>(null);
   const graphRef = useRef<JSONCrackRef>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const commandsRef = useRef<(action: string) => void>(() => undefined);
   const theme = resolveTheme(background);
   const matches = useMemo(() => findGraphMatches(nodes, searchQuery), [nodes, searchQuery]);
   const activeMatch = activeIndex >= 0 ? matches[activeIndex] : undefined;
@@ -96,6 +111,12 @@ const App: React.FC = () => {
       }
       if (data && typeof data === "object" && "record" in data) {
         setRecord(data.record ?? null);
+      }
+      if (data?.layoutDirection === "RIGHT" || data?.layoutDirection === "DOWN") {
+        setLayout(data.layoutDirection);
+      }
+      if (data?.type === "graphCommand" && typeof data.action === "string") {
+        commandsRef.current(data.action);
       }
     };
 
@@ -193,6 +214,10 @@ const App: React.FC = () => {
     setActiveIndex(-1);
   }, [searchQuery, json]);
 
+  useEffect(() => {
+    setCollapsed(false);
+  }, [layout, json]);
+
   const toggleSession = useCallback(() => {
     getVsCodeApi()?.postMessage({ type: "toggleAgentSession" });
   }, []);
@@ -229,6 +254,89 @@ const App: React.FC = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [canNextRecord, canPrevRecord, searchOpen, selectedNode, tabs.length]);
 
+  const noteStatus = useCallback((text: string) => {
+    setToolbarStatus(text);
+    window.setTimeout(() => setToolbarStatus(current => (current === text ? null : current)), 2500);
+  }, []);
+
+  const exportGraph = useCallback(
+    async (kind: "png" | "png-clear" | "svg" | "copy") => {
+      const root = frameRef.current;
+      if (!root || problem) {
+        noteStatus("Nothing to export");
+        return;
+      }
+      try {
+        const captured = await captureGraph(root, kind === "png-clear");
+        if (kind === "copy") {
+          const item = new ClipboardItem({ "image/png": captured.png });
+          await navigator.clipboard.write([item]);
+          noteStatus(captured.size.capped ? "Copied (scaled down)" : "Copied");
+          return;
+        }
+        const base64 =
+          kind === "svg"
+            ? btoa(unescape(encodeURIComponent(captured.svg)))
+            : await blobToBase64(captured.png);
+        const api = getVsCodeApi();
+        if (!api) {
+          const href = URL.createObjectURL(
+            kind === "svg" ? new Blob([captured.svg], { type: "image/svg+xml" }) : captured.png
+          );
+          const link = document.createElement("a");
+          link.href = href;
+          link.download = kind === "svg" ? "graph.svg" : "graph.png";
+          link.click();
+          URL.revokeObjectURL(href);
+          noteStatus(captured.size.capped ? "Exported (scaled down)" : "Exported");
+          return;
+        }
+        api.postMessage({
+          type: "saveExport",
+          format: kind === "svg" ? "svg" : "png",
+          base64,
+          capped: captured.size.capped,
+        });
+      } catch (error) {
+        noteStatus(error instanceof Error ? error.message : "Export failed");
+      }
+    },
+    [noteStatus, problem]
+  );
+
+  const toggleCollapse = useCallback(() => {
+    if (collapsed) {
+      graphRef.current?.expandAll();
+      setCollapsed(false);
+    } else {
+      graphRef.current?.collapseAll();
+      setCollapsed(true);
+    }
+  }, [collapsed]);
+
+  const rotate = useCallback(() => {
+    const next = layout === "RIGHT" ? "DOWN" : "RIGHT";
+    setLayout(next);
+    getVsCodeApi()?.postMessage({
+      type: "setLayout",
+      direction: next === "DOWN" ? "down" : "right",
+    });
+  }, [layout]);
+
+  commandsRef.current = action => {
+    if (action === "exportPng") void exportGraph("png");
+    else if (action === "exportPngTransparent") void exportGraph("png-clear");
+    else if (action === "exportSvg") void exportGraph("svg");
+    else if (action === "copyPng") void exportGraph("copy");
+    else if (action === "collapseAll") {
+      graphRef.current?.collapseAll();
+      setCollapsed(true);
+    } else if (action === "expandAll") {
+      graphRef.current?.expandAll();
+      setCollapsed(false);
+    }
+  };
+
   // Inline editing is only wired up in JSONL line-tracking mode (the host only
   // handles editValue there); plain .json stays read-only.
   const editingEnabled = tabs.length > 0;
@@ -262,7 +370,18 @@ const App: React.FC = () => {
           onNext={() => navigate("next")}
         />
       )}
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <GraphToolbar
+        layout={layout}
+        collapsed={collapsed}
+        disabled={!!problem}
+        status={toolbarStatus}
+        onToggleCollapse={toggleCollapse}
+        onRotate={rotate}
+        onExportPng={transparent => void exportGraph(transparent ? "png-clear" : "png")}
+        onExportSvg={() => void exportGraph("svg")}
+        onCopyPng={() => void exportGraph("copy")}
+      />
+      <div ref={frameRef} style={{ position: "relative", flex: 1, minHeight: 0 }}>
         <GraphSearch
           open={searchOpen}
           query={searchQuery}
@@ -285,6 +404,7 @@ const App: React.FC = () => {
             ref={graphRef}
             json={json}
             theme={theme}
+            layoutDirection={layout}
             showControls={false}
             onNodeClick={handleNodeClick}
             onParse={graph => setNodes(graph.nodes)}

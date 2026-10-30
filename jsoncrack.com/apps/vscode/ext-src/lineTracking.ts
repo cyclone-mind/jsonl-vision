@@ -123,7 +123,11 @@ class LineTrackingSession {
   ) {
     this.document = editor.document;
     const title = `JSONL Vision — ${path.basename(this.document.fileName)}`;
-    this.panel = createWebviewPanel(context, title);
+    this.panel = createWebviewPanel(context, title, () => ({
+      fileName: path.basename(this.document.fileName),
+      directory: path.dirname(this.document.fileName),
+      line: this.state.focusedLine,
+    }));
 
     this.panel.webview.onDidReceiveMessage(
       msg => this.onWebviewMessage(msg),
