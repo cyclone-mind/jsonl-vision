@@ -38,6 +38,18 @@
   white-space: nowrap;
 }
 
+.hit {
+  background: rgba(224, 168, 107, 0.45);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.hitActive {
+  background: #e0a86b;
+  color: #1c1612;
+}
+
 .row {
   padding: 3px 10px;
   height: 30px;

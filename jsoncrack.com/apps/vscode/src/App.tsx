@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
-import type { NodeData } from "jsoncrack-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { JSONCrackRef, NodeData } from "jsoncrack-react";
 import { JSONCrack } from "jsoncrack-react";
+import { GraphSearch } from "./components/GraphSearch";
 import { NodeModal } from "./components/NodeModal";
+import type { RecordNavState } from "./components/RecordNav";
+import { RecordNav } from "./components/RecordNav";
 import type { SessionBarState } from "./components/SessionBar";
 import { SessionBar } from "./components/SessionBar";
 import type { TabStripTab } from "./components/TabStrip";
 import { TabStrip } from "./components/TabStrip";
+import { findGraphMatches, matchCountLabel, stepMatchIndex } from "./graphSearch";
 import { getVsCodeApi } from "./vscodeApi";
 
 type BackgroundSetting = "auto" | "dark" | "warm";
@@ -37,6 +41,8 @@ interface HostMessage {
   problem?: string | null;
   /** Agent session chrome. Null in raw JSONL / whole-document mode. */
   session?: SessionBarState | null;
+  /** Present in JSONL line mode, including when agent session mode is off. */
+  record?: RecordNavState | null;
 }
 
 const App: React.FC = () => {
@@ -47,7 +53,15 @@ const App: React.FC = () => {
   const [background, setBackground] = useState<BackgroundSetting>(readInitialBackground);
   const [problem, setProblem] = useState<string | null>(null);
   const [session, setSession] = useState<SessionBarState | null>(null);
+  const [record, setRecord] = useState<RecordNavState | null>(null);
+  const [nodes, setNodes] = useState<NodeData[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const graphRef = useRef<JSONCrackRef>(null);
   const theme = resolveTheme(background);
+  const matches = useMemo(() => findGraphMatches(nodes, searchQuery), [nodes, searchQuery]);
+  const activeMatch = activeIndex >= 0 ? matches[activeIndex] : undefined;
 
   useEffect(() => {
     const vscode = getVsCodeApi();
@@ -79,6 +93,9 @@ const App: React.FC = () => {
       }
       if (data && typeof data === "object" && "session" in data) {
         setSession(data.session ?? null);
+      }
+      if (data && typeof data === "object" && "record" in data) {
+        setRecord(data.record ?? null);
       }
     };
 
@@ -143,27 +160,74 @@ const App: React.FC = () => {
     getVsCodeApi()?.postMessage({ type: "navigate", direction });
   }, []);
 
+  const findLine = useCallback(
+    (direction: "prev" | "next") => {
+      const query = searchQuery.trim();
+      if (!query) return;
+      getVsCodeApi()?.postMessage({ type: "findLine", query, direction });
+    },
+    [searchQuery]
+  );
+
+  const jumpMatch = useCallback(
+    (backward: boolean) => {
+      const next = stepMatchIndex(matches.length, activeIndex, backward);
+      setActiveIndex(next);
+      const match = matches[next];
+      if (match) graphRef.current?.centerNode(match.nodeId);
+    },
+    [activeIndex, matches]
+  );
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setActiveIndex(-1);
+  }, []);
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [searchQuery, json]);
+
   const toggleSession = useCallback(() => {
     getVsCodeApi()?.postMessage({ type: "toggleAgentSession" });
   }, []);
 
+  const canPrevRecord = session?.enabled ? session.canPrev : (record?.canPrev ?? false);
+  const canNextRecord = session?.enabled ? session.canNext : (record?.canNext ?? false);
+
   useEffect(() => {
-    if (!session?.enabled) return;
     const onKey = (event: KeyboardEvent) => {
-      if (!event.altKey) return;
-      const tag = (event.target as HTMLElement | null)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-      if (event.key === "ArrowLeft" && session.canPrev) {
+      const findShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f";
+      if (findShortcut) {
+        event.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+      if (event.key === "Escape" && searchOpen && !selectedNode) {
+        event.preventDefault();
+        setSearchOpen(false);
+        setSearchQuery("");
+        setActiveIndex(-1);
+        return;
+      }
+      if (!event.altKey || event.ctrlKey || event.metaKey) return;
+      if (tabs.length === 0) return;
+      if (event.key === "ArrowLeft" && canPrevRecord) {
         event.preventDefault();
         getVsCodeApi()?.postMessage({ type: "navigate", direction: "prev" });
-      } else if (event.key === "ArrowRight" && session.canNext) {
+      } else if (event.key === "ArrowRight" && canNextRecord) {
         event.preventDefault();
         getVsCodeApi()?.postMessage({ type: "navigate", direction: "next" });
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [session]);
+  }, [canNextRecord, canPrevRecord, searchOpen, selectedNode, tabs.length]);
 
   // Inline editing is only wired up in JSONL line-tracking mode (the host only
   // handles editValue there); plain .json stays read-only.
@@ -191,19 +255,55 @@ const App: React.FC = () => {
           onToggle={toggleSession}
         />
       )}
+      {record && tabs.length > 0 && !session?.enabled && (
+        <RecordNav
+          record={record}
+          onPrev={() => navigate("prev")}
+          onNext={() => navigate("next")}
+        />
+      )}
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <GraphSearch
+          open={searchOpen}
+          query={searchQuery}
+          countLabel={searchQuery.trim() ? matchCountLabel(matches.length, activeIndex) : ""}
+          lineSearch={tabs.length > 0}
+          onOpen={openSearch}
+          onClose={closeSearch}
+          onQuery={setSearchQuery}
+          onPrevMatch={() => jumpMatch(true)}
+          onNextMatch={() => jumpMatch(false)}
+          onPrevLine={() => findLine("prev")}
+          onNextLine={() => findLine("next")}
+        />
         {problem ? (
           <div className="jsonl-problem" role="status">
             <p>{problem}</p>
           </div>
         ) : (
           <JSONCrack
+            ref={graphRef}
             json={json}
             theme={theme}
             showControls={false}
             onNodeClick={handleNodeClick}
+            onParse={graph => setNodes(graph.nodes)}
             onEditValue={editingEnabled ? editValue : undefined}
             isPathEditable={session?.enabled ? isPathEditable : undefined}
+            graphSearch={
+              searchOpen && searchQuery.trim()
+                ? {
+                    query: searchQuery.trim(),
+                    active: activeMatch
+                      ? {
+                          nodeId: activeMatch.nodeId,
+                          rowIndex: activeMatch.rowIndex,
+                          field: activeMatch.field,
+                        }
+                      : null,
+                  }
+                : undefined
+            }
           />
         )}
       </div>

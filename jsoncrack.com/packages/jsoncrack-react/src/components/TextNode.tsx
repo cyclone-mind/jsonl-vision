@@ -1,7 +1,9 @@
 import React from "react";
 import type { NodeData } from "../types";
 import { EditableValue } from "./EditableValue";
+import { HighlightText } from "./HighlightText";
 import styles from "./Node.module.css";
+import { useSearchContext } from "./SearchContext";
 import { TextRenderer } from "./TextRenderer";
 import { getTextColor } from "./nodeStyles";
 
@@ -13,6 +15,8 @@ type TextNodeProps = {
 
 const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
   const { text, width, height } = node;
+  const search = useSearchContext();
+  const query = search.query.trim();
   const firstRow = text[0];
 
   if (!firstRow) return null;
@@ -43,7 +47,17 @@ const TextNodeBase = ({ node, x, y }: TextNodeProps) => {
         data-key={JSON.stringify(text)}
       >
         <span className={styles.key} style={{ color: getTextColor({ value, type: typeof value }) }}>
-          {canEdit ? (
+          {query && firstRow.type !== "object" && firstRow.type !== "array" ? (
+            <HighlightText
+              text={value == null ? "null" : String(value)}
+              query={query}
+              active={
+                search.active?.nodeId === node.id &&
+                search.active.rowIndex === 0 &&
+                search.active.field === "value"
+              }
+            />
+          ) : canEdit ? (
             <EditableValue path={node.path!} value={value} valueType={firstRow.type}>
               <TextRenderer>{value}</TextRenderer>
             </EditableValue>

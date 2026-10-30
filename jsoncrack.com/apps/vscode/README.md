@@ -29,7 +29,17 @@ code --install-extension cyclone-mind.jsonl-vision
 
 1. Open a `.jsonl`, `.ndjson`, `.jsonlines`, or `.json` file.
 2. Click the **JSONL Vision** button in the editor title bar (top right).
-3. Move the cursor between lines to open a tab per line; double-click a value to edit it.
+3. Move the cursor between lines to open a tab per line, or use **previous / next record** (Alt+Left / Alt+Right). Double-click a value to edit it.
+4. Press Ctrl/Cmd+F (or **Find**) to search keys and values in the graph. Enter and Shift+Enter jump between matches. **Next line** and **Prev line** find the query in other JSONL records.
+5. Run **JSONL Vision: Go to Line** to open a line number.
+
+## Search
+
+**Find** (or Ctrl/Cmd+F) searches the graph that is open. Matching keys and values are highlighted. The count is the number of fields that contain the text. Enter jumps to the next match and centers its node; Shift+Enter jumps to the previous one. Escape closes the box.
+
+On a JSONL file, **Next line** and **Prev line** move to another record whose raw line contains the same text. That scan does not parse JSON. It matches the file text, so a label that exists only in agent session mode (such as `tool call`) is not a line hit unless those characters are in the line. A match inside a nested JSON string still counts, because that string is part of the line.
+
+Collapsed nodes are included in the count. Centering works when the node is on screen.
 
 ## Agent session logs
 
@@ -40,7 +50,7 @@ JSONL Vision sniffs the first lines of a JSONL file. When they match those schem
 - Each record is labeled **user**, **assistant**, **tool call**, **tool result**, or **meta**, with a colored bar and a short summary (role plus the first words, or the tool name).
 - A tool call shows its name and input. A nearby tool result is inlined on that node, and a result line shows the tool name and input it answers. Pairing uses Claude `tool_use` / `tool_use_id` and Codex `call_id`.
 - String fields that contain a JSON object or array become nested nodes.
-- Previous and next record buttons (Alt+Left / Alt+Right) move to the neighboring non-empty line.
+- Previous and next record buttons (Alt+Left / Alt+Right) move to the neighboring non-empty line. The same controls are on plain JSONL files.
 - Open tabs show a short hint such as `3 · Read`.
 
 Edits still write back to that line. A value inside a parsed JSON string is written back into the string. A value copied from the paired line, a session-view label, or a shortened long string is read-only, so the file is not corrupted. Turn the mode off to graph and edit the raw record.

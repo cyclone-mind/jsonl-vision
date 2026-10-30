@@ -11,6 +11,7 @@ import {
 import type { PathSegment, Scalar } from "./applyEdit";
 import { graphPayload } from "./jsonGuard";
 import { adjacentNonEmptyLine, focusLineDecision } from "./lineFocus";
+import { findLineContaining, parseGoToLine } from "./lineSearch";
 import type { TextChange } from "./lineShift";
 import { shiftLineNumber } from "./lineShift";
 import type { LineTabsAction, LineTabsState } from "./lineTabs";
@@ -42,6 +43,39 @@ export function startLineTracking(context: vscode.ExtensionContext, editor: vsco
   }
   const session = new LineTrackingSession(context, editor, () => sessions.delete(key));
   sessions.set(key, session);
+}
+
+/** Ask for a 1-based line and open that JSONL record. */
+export async function goToJsonlLine(context: vscode.ExtensionContext, editor?: vscode.TextEditor) {
+  const active = [...sessions.values()].find(session => session.isPanelActive());
+  const target =
+    active?.editorDocument() ??
+    (editor && isJsonlDocument(editor.document)
+      ? editor.document
+      : vscode.window.visibleTextEditors.find(item => isJsonlDocument(item.document))?.document);
+  if (!target) {
+    void vscode.window.showInformationMessage("Open a JSONL file to go to a line.");
+    return;
+  }
+  const picked = await vscode.window.showInputBox({
+    title: "Go to Line",
+    prompt: "Line number",
+    placeHolder: "1",
+    validateInput: value => {
+      const parsed = parseGoToLine(value, target.lineCount);
+      return parsed.ok ? undefined : parsed.message;
+    },
+  });
+  if (picked == null) return;
+  const parsed = parseGoToLine(picked, target.lineCount);
+  if (!parsed.ok) return;
+  const visible = vscode.window.visibleTextEditors.find(item => item.document === target);
+  if (visible) startLineTracking(context, visible);
+  else {
+    const shown = await vscode.window.showTextDocument(target, { preview: false });
+    startLineTracking(context, shown);
+  }
+  sessions.get(target.uri.toString())?.goToLine(parsed.line);
 }
 
 /** Toggle agent session mode for the open panel, or for the JSONL editor in front. */
@@ -136,6 +170,21 @@ class LineTrackingSession {
     return this.panel.active;
   }
 
+  editorDocument(): vscode.TextDocument {
+    return this.document;
+  }
+
+  /** Move the editor and the graph to a 0-based line. Blank lines are revealed but not graphed. */
+  goToLine(line: number) {
+    const text = this.lineText(line);
+    if (text.trim() === "") {
+      void vscode.window.showInformationMessage(`Line ${line + 1} is blank.`);
+    } else {
+      this.focusLine(line);
+    }
+    this.revealLine(line);
+  }
+
   /** Flip agent session mode for this file without changing the global setting. */
   toggleAgentMode() {
     this.manual = this.isAgentModeOn() ? false : true;
@@ -194,6 +243,15 @@ class LineTrackingSession {
       const direction = (msg as { direction?: string }).direction;
       if (direction === "prev" || direction === "next") {
         this.navigate(direction === "next" ? 1 : -1);
+      }
+      return;
+    }
+
+    if (m.type === "findLine") {
+      const query = (msg as { query?: unknown }).query;
+      const direction = (msg as { direction?: string }).direction;
+      if (typeof query === "string" && (direction === "prev" || direction === "next")) {
+        this.findLine(query, direction === "next" ? 1 : -1);
       }
       return;
     }
@@ -360,7 +418,44 @@ class LineTrackingSession {
       tabs: this.state.tabs.map(tab => this.postedTab(tab.line, tab.drift, family, focusedText)),
       focusedLine: this.state.focusedLine,
       session: payload.session,
+      record: this.recordNav(),
     });
+  }
+
+  private recordNav() {
+    const line = this.state.focusedLine;
+    return {
+      line,
+      lineCount: this.document.lineCount,
+      canPrev:
+        line !== null &&
+        adjacentNonEmptyLine(line, -1, this.document.lineCount, current =>
+          this.lineText(current)
+        ) !== null,
+      canNext:
+        line !== null &&
+        adjacentNonEmptyLine(line, 1, this.document.lineCount, current =>
+          this.lineText(current)
+        ) !== null,
+    };
+  }
+
+  private findLine(query: string, direction: 1 | -1) {
+    const from = this.state.focusedLine ?? (direction === 1 ? -1 : this.document.lineCount);
+    const found = findLineContaining(from, direction, this.document.lineCount, query, line =>
+      this.lineText(line)
+    );
+    if (found === null) {
+      const trimmed = query.trim();
+      void vscode.window.showInformationMessage(
+        trimmed
+          ? `No other line contains “${trimmed}”.`
+          : "Type a search before looking through lines."
+      );
+      return;
+    }
+    this.focusLine(found);
+    this.revealLine(found);
   }
 
   private postedTab(

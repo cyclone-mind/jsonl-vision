@@ -3,6 +3,7 @@ import type { NodeProps } from "reaflow";
 import { Node } from "reaflow";
 import type { NodeData } from "../types";
 import { ObjectNode } from "./ObjectNode";
+import { useSearchContext } from "./SearchContext";
 import { TextNode } from "./TextNode";
 
 type CustomNodeProps = NodeProps<NodeData> & {
@@ -13,6 +14,8 @@ type CustomNodeProps = NodeProps<NodeData> & {
 const NODE_CORNER_RADIUS = 10;
 
 const CustomNodeBase = ({ onNodeClick, ...nodeProps }: CustomNodeProps) => {
+  const search = useSearchContext();
+  const active = search.active?.nodeId === nodeProps.properties.id && search.query.trim() !== "";
   const handleNodeClick = React.useCallback(
     (_: React.MouseEvent<SVGGElement, MouseEvent>, data: NodeData) => {
       onNodeClick?.(data);
@@ -32,12 +35,12 @@ const CustomNodeBase = ({ onNodeClick, ...nodeProps }: CustomNodeProps) => {
         event.currentTarget.style.stroke = "var(--accent)";
       }}
       onLeave={event => {
-        event.currentTarget.style.stroke = "var(--node-stroke)";
+        event.currentTarget.style.stroke = active ? "#e0a86b" : "var(--node-stroke)";
       }}
       style={{
         fill: "var(--node-fill)",
-        stroke: "var(--node-stroke)",
-        strokeWidth: 1,
+        stroke: active ? "#e0a86b" : "var(--node-stroke)",
+        strokeWidth: active ? 2 : 1,
       }}
     >
       {({ node, x, y }) => {

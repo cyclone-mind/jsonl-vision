@@ -406,6 +406,130 @@ a {
   opacity: 1;
 }
 
+.jsonl-recordnav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  background: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+  border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder, #3c3c3c);
+  color: var(--vscode-foreground, #cccccc);
+  font-family: var(--vscode-font-family, "Segoe UI", system-ui, sans-serif);
+  font-size: 12px;
+}
+
+.jsonl-recordnav-label {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.jsonl-recordnav-btn {
+  width: 26px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.jsonl-recordnav-btn:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.25));
+}
+
+.jsonl-recordnav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.jsonl-find {
+  position: absolute;
+  z-index: 20;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-editorWidget-foreground, #cccccc);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  font-family: var(--vscode-font-family, "Segoe UI", system-ui, sans-serif);
+  font-size: 12px;
+}
+
+body[data-jsonl-background="warm"] .jsonl-find,
+body[data-vscode-theme-kind*="light"] .jsonl-find {
+  background: #f6f1e8;
+  color: #2a241e;
+  border-color: #d9cbb8;
+}
+
+.jsonl-find-open,
+.jsonl-find-text,
+.jsonl-find-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  border-radius: 6px;
+}
+
+.jsonl-find-open,
+.jsonl-find-text {
+  padding: 3px 8px;
+}
+
+.jsonl-find-btn {
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+
+.jsonl-find-open:hover,
+.jsonl-find-text:hover,
+.jsonl-find-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.25));
+}
+
+.jsonl-find-input {
+  width: 180px;
+  max-width: 36vw;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-input-border, #6a5a48);
+  background: var(--vscode-input-background, #1e1e1e);
+  color: var(--vscode-input-foreground, #cccccc);
+  font: inherit;
+}
+
+body[data-jsonl-background="warm"] .jsonl-find-input,
+body[data-vscode-theme-kind*="light"] .jsonl-find-input {
+  background: #fffaf3;
+  color: #2a241e;
+  border-color: #d9cbb8;
+}
+
+.jsonl-find-input:focus {
+  outline: 1px solid var(--vscode-focusBorder, #e0a86b);
+  outline-offset: 1px;
+}
+
+.jsonl-find-count {
+  min-width: 4.5em;
+  text-align: right;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .jsonl-modal-code {
   margin: 0;
   padding: 10px 12px;

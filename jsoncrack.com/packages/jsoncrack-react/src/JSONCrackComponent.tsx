@@ -38,6 +38,8 @@ import { CustomEdge } from "./components/CustomEdge";
 import { CustomNode } from "./components/CustomNode";
 import type { EditableScalar } from "./components/EditContext";
 import { EditContext } from "./components/EditContext";
+import type { GraphSearchState } from "./components/SearchContext";
+import { SearchContext } from "./components/SearchContext";
 import { computeLaneIndices } from "./edgeLanes";
 import { HEADER_HEIGHT } from "./layoutConstants";
 import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData, NodeRect } from "./types";
@@ -92,6 +94,8 @@ export interface JSONCrackRef {
   centerView: () => void;
   /** Center and zoom on the root node of the graph. */
   focusFirstNode: () => void;
+  /** Center and zoom on the node with this id. No-op if it is not on screen. */
+  centerNode: (nodeId: string) => void;
   /** Toggle collapse for a specific JSON path (uncontrolled mode only). */
   toggleCollapse: (path: JSONPath) => void;
   /** Collapse every first-level container of the root (uncontrolled mode only). */
@@ -156,6 +160,11 @@ export interface JSONCrackProps {
    * while other leaves stay editable. Ignored when `onEditValue` is omitted.
    */
   isPathEditable?: (path: JSONPath) => boolean;
+  /**
+   * Case-insensitive highlights for keys, values, and header labels.
+   * `active` is the match Enter last jumped to; its node is centered by the caller.
+   */
+  graphSearch?: GraphSearchState;
 }
 
 /** Interactive JSON-to-graph visualization. Forwards a `JSONCrackRef` for imperative viewport control. */
@@ -182,6 +191,7 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       onCollapseChange,
       onEditValue,
       isPathEditable,
+      graphSearch,
     },
     ref
   ) => {
@@ -307,6 +317,16 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
         setZoom: (zoomFactor: number) => setViewPortZoom(viewPort, zoomFactor),
         centerView: () => fitGraphToViewPort(viewPort, containerRef.current, layoutSizeRef.current),
         focusFirstNode: () => focusRootNode(viewPort, containerRef.current),
+        centerNode: (nodeId: string) => {
+          const container = containerRef.current;
+          if (!viewPort || !container || !nodeId) return;
+          const marker = container.querySelector(`[data-id="node-${CSS.escape(nodeId)}"]`);
+          const host = (marker?.closest("g") ?? marker) as HTMLElement | null;
+          if (!host) return;
+          viewPort.camera?.centerFitElementIntoView(host, {
+            elementExtraMarginForZoom: 80,
+          });
+        },
       }),
       [viewPort]
     );
@@ -421,6 +441,11 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
       onEditValue?: JSONCrackProps["onEditValue"];
       isPathEditable?: JSONCrackProps["isPathEditable"];
     }>(() => ({ onEditValue, isPathEditable }), [onEditValue, isPathEditable]);
+
+    const searchContextValue = useMemo<GraphSearchState>(
+      () => graphSearch ?? { query: "", active: null },
+      [graphSearch]
+    );
 
     const collapsedPathsRef = useRef(collapsedPaths);
     collapsedPathsRef.current = collapsedPaths;
@@ -685,35 +710,37 @@ export const JSONCrack = forwardRef<JSONCrackRef, JSONCrackProps>(
           }}
         >
           <CollapseContext.Provider value={collapseContextValue}>
-            <EditContext.Provider value={editContextValue}>
-              <Canvas
-                className="jsoncrack-canvas"
-                onLayoutChange={onLayoutChange}
-                node={renderNode}
-                edge={renderEdge}
-                nodes={visibleNodes}
-                edges={visibleEdges}
-                arrow={null}
-                maxHeight={paneHeight}
-                maxWidth={paneWidth}
-                height={paneHeight}
-                width={paneWidth}
-                direction={layoutDirection}
-                layoutOptions={layoutOptions}
-                key={layoutDirection}
-                pannable={false}
-                zoomable={false}
-                animated={false}
-                readonly
-                dragEdge={null}
-                dragNode={null}
-                // Disable reaflow's built-in auto-centering of content inside the
-                // pane. Passing a nullish `defaultPosition` makes reaflow leave
-                // the group at the svg origin so our fit-to-viewport rect math
-                // matches reality.
-                defaultPosition={null as unknown as undefined}
-              />
-            </EditContext.Provider>
+            <SearchContext.Provider value={searchContextValue}>
+              <EditContext.Provider value={editContextValue}>
+                <Canvas
+                  className="jsoncrack-canvas"
+                  onLayoutChange={onLayoutChange}
+                  node={renderNode}
+                  edge={renderEdge}
+                  nodes={visibleNodes}
+                  edges={visibleEdges}
+                  arrow={null}
+                  maxHeight={paneHeight}
+                  maxWidth={paneWidth}
+                  height={paneHeight}
+                  width={paneWidth}
+                  direction={layoutDirection}
+                  layoutOptions={layoutOptions}
+                  key={layoutDirection}
+                  pannable={false}
+                  zoomable={false}
+                  animated={false}
+                  readonly
+                  dragEdge={null}
+                  dragNode={null}
+                  // Disable reaflow's built-in auto-centering of content inside the
+                  // pane. Passing a nullish `defaultPosition` makes reaflow leave
+                  // the group at the svg origin so our fit-to-viewport rect math
+                  // matches reality.
+                  defaultPosition={null as unknown as undefined}
+                />
+              </EditContext.Provider>
+            </SearchContext.Provider>
           </CollapseContext.Provider>
         </Space>
       </div>

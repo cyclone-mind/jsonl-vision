@@ -1,7 +1,12 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import { graphPayload } from "./jsonGuard";
-import { isJsonlDocument, startLineTracking, toggleAgentSession } from "./lineTracking";
+import {
+  goToJsonlLine,
+  isJsonlDocument,
+  startLineTracking,
+  toggleAgentSession,
+} from "./lineTracking";
 import { createWebviewPanel } from "./webview";
 
 function getPanelTitle(document?: vscode.TextDocument) {
@@ -30,6 +35,9 @@ export function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("jsonl-vision.toggleAgentSession", () =>
       toggleAgentSession(context, vscode.window.activeTextEditor)
+    ),
+    vscode.commands.registerCommand("jsonl-vision.goToLine", () =>
+      goToJsonlLine(context, vscode.window.activeTextEditor)
     )
   );
 }
