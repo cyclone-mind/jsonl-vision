@@ -1,6 +1,6 @@
 {
   "name": "jsonl-vision",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "displayName": "JSONL Vision: JSONL / NDJSON Graph View",
   "description": "View and edit one JSONL, NDJSON, or JSON Lines record as a JSON Crack-style node graph. Value edits write back to the file. Agent session logs from Claude Code and Codex open as a readable view.",
   "publisher": "cyclone-mind",

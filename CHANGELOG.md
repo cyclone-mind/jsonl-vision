@@ -1,17 +1,18 @@
 # Changelog
 
-## Unreleased
-
-Layout-only restructure. No user-facing change.
+## 0.4.0 — 2026-10-30
 
 ### Added
 
-- Search the current graph (Ctrl/Cmd+F or the Find box): keys and values match case-insensitively, matches are highlighted, and Enter / Shift+Enter center the next or previous match. A count shows how many fields matched.
-- Search across JSONL lines from that box. Next and previous line scan the file text and do not parse every record.
-- **JSONL Vision: Go to Line** opens a JSONL record by line number.
-- Previous and next record (Alt+Left / Alt+Right and buttons) work on plain JSONL files as well as in agent session mode.
-- Export the current graph as PNG (theme background or transparent) or SVG. The file dialog defaults to the source name plus the line number. Copy Graph as PNG puts the image on the clipboard. Exports cover the whole graph and are scaled down if they would exceed the size cap.
-- Collapse all / Expand all, and Rotate Layout (left-to-right or top-to-bottom). The direction is stored in `jsonl-vision.layoutDirection`.
+- Find (Ctrl/Cmd+F or the Find box) searches keys and values in the open graph, case-insensitively, and highlights matches. Enter and Shift+Enter center the next or previous match. On a JSONL file, next and previous line scan the raw file text and do not parse every record.
+- **JSONL Vision: Go to Line** opens a JSONL record by line number. Previous and next record (Alt+Left / Alt+Right and the record buttons) work on plain JSONL files as well as in agent session mode.
+- Export the current graph as PNG (theme background or transparent) or SVG, or copy the PNG to the clipboard. The file dialog defaults to the source name plus the line number. Exports cover the whole graph and are scaled down if they would exceed the size cap.
+- Collapse all / Expand all folds or opens the first level of the graph.
+- `jsonl-vision.layoutDirection` stores left-to-right or top-to-bottom. Rotate Layout and the toolbar button update it for the workspace when one is open, otherwise for the user.
+
+### Internal
+
+- Repository layout only. The extension lives at the repository root, and the graph engine lives at `packages/jsoncrack-react`. No user-facing behavior change.
 
 ## 0.3.0 — 2026-10-30
 
