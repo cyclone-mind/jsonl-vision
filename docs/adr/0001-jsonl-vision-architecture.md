@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-07-11
 
+**Layout (2026-10-30):** The vendored `jsoncrack.com/` monorepo described below was later removed. The extension now lives at the repository root, and the graph engine lives at `packages/jsoncrack-react`. JSON Crack's Apache-2.0 and MIT notices stay in `NOTICE.md`, `LICENSE-jsoncrack-react.md`, and `LICENSE.md`. `jsoncrack.com/apps/vscode/assets/demo.gif` remains only so the published 0.3.0 listing image still loads. The decision text underneath is the record of the original choice.
+
 ## Context
 
 The pain point: viewing a single line of a `.jsonl` file as nicely-formatted, navigable JSON currently requires copying that line out to a website like [jsoncrack.com](https://jsoncrack.com)/[todiagram.com](https://todiagram.com) and pasting it in. There's already an official open-source [JSON Crack VS Code extension](https://github.com/AykutSarac/jsoncrack-vscode) that renders a whole `.json` file as an interactive node graph — but it operates on the entire document as one blob and has no concept of "one record per line," so it can't be pointed at a single line of a `.jsonl` file. It is also read-only: no field can be edited and written back.

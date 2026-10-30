@@ -14,12 +14,6 @@ permissions:
   contents: write
   id-token: write
 
-# The pnpm workspace is jsoncrack.com/, not the repository root.
-defaults:
-  run:
-    working-directory: jsoncrack.com
-    shell: bash
-
 jobs:
   release:
     name: Publish the VSIX
@@ -40,7 +34,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: jsoncrack.com/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -48,10 +42,10 @@ jobs:
       - name: Check the tag matches the extension version
         run: |
           set -euo pipefail
-          version="$(node -p "require('./apps/vscode/package.json').version")"
+          version="$(node -p "require('./package.json').version")"
           tag="${GITHUB_REF_NAME#v}"
           if [ "$version" != "$tag" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} does not match jsoncrack.com/apps/vscode/package.json version ${version}."
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${version}."
             exit 1
           fi
 
@@ -59,15 +53,14 @@ jobs:
         id: package
         run: |
           set -euo pipefail
-          pnpm --filter jsoncrack-react run build
-          pnpm --filter jsonl-vision run vsc:package
-          version="$(node -p "require('./apps/vscode/package.json').version")"
-          vsix="apps/vscode/jsonl-vision-${version}.vsix"
+          pnpm run vsc:package
+          version="$(node -p "require('./package.json').version")"
+          vsix="jsonl-vision-${version}.vsix"
           if [ ! -f "$vsix" ]; then
             echo "::error::vsce package did not produce ${vsix}"
             exit 1
           fi
-          echo "vsix=${GITHUB_WORKSPACE}/jsoncrack.com/${vsix}" >> "$GITHUB_OUTPUT"
+          echo "vsix=${GITHUB_WORKSPACE}/${vsix}" >> "$GITHUB_OUTPUT"
 
       # Trusted Publishing: vsce 4.1.0 exchanges one GitHub OIDC token
       # (audience marketplace.visualstudio.com) for a short-lived Marketplace
@@ -106,7 +99,6 @@ jobs:
 
       - name: Attach the VSIX to the GitHub release
         if: always() && steps.package.outcome == 'success'
-        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

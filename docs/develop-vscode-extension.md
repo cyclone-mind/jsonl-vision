@@ -1,6 +1,6 @@
 # 从零开发并发布一个 VS Code 扩展
 
-本文是给「做过一遍但记不清」用的备忘：官方最小路径 + 本仓库（JSONL Vision）实际走过的步骤。本仓库自己的构建/发版命令见 [`jsoncrack.com/apps/vscode/DEVELOPMENT.md`](../jsoncrack.com/apps/vscode/DEVELOPMENT.md)。
+本文是给「做过一遍但记不清」用的备忘：官方最小路径 + 本仓库（JSONL Vision）实际走过的步骤。本仓库自己的构建/发版命令见 [`DEVELOPMENT.md`](../DEVELOPMENT.md)。
 
 官方文档：
 
@@ -89,21 +89,21 @@ export function activate(context: vscode.ExtensionContext) {
 
 JSONL Vision 不是纯命令扩展，是 **extension host + webview**：
 
-| 路径                                        | 角色                                                     |
-| ------------------------------------------- | -------------------------------------------------------- |
-| `jsoncrack.com/apps/vscode/ext-src/`      | Host：命令、文档、把 JSON 文本`postMessage` 给 webview |
-| `jsoncrack.com/apps/vscode/src/`          | Webview：React 图画、把编辑结果`postMessage` 回来      |
-| `jsoncrack.com/packages/jsoncrack-react/` | 图引擎                                                   |
+| 路径                         | 角色                                                     |
+| ---------------------------- | -------------------------------------------------------- |
+| `ext-src/`                   | Host：命令、文档、把 JSON 文本`postMessage` 给 webview |
+| `src/`                       | Webview：React 图画、把编辑结果`postMessage` 回来      |
+| `packages/jsoncrack-react/` | 图引擎                                                   |
 
-调试：打开 **monorepo 根** `jsoncrack.com/`，F5 跑 launch 配置 `Run VSCode Extension`，它把 `--extensionDevelopmentPath` 指到 `apps/vscode`。
+调试：打开**仓库根目录**，F5 跑 launch 配置 `Run VSCode Extension`，`--extensionDevelopmentPath` 就是仓库根。
 
 ```json
 {
   "name": "Run VSCode Extension",
   "type": "extensionHost",
   "request": "launch",
-  "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"],
-  "outFiles": ["${workspaceFolder}/apps/vscode/build/**/*.js"],
+  "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+  "outFiles": ["${workspaceFolder}/build/**/*.js"],
   "preLaunchTask": "build vscode extension"
 }
 ```
@@ -123,7 +123,7 @@ Host 不能直接 `import` webview 的 React 树；两边只靠 `webview.postMes
 工具是 [`@vscode/vsce`](https://github.com/microsoft/vscode-vsce)：
 
 ```sh
-cd jsoncrack.com/apps/vscode
+# 仓库根目录
 pnpm run vsc:package
 # 或: npx vsce package --no-dependencies
 ```
@@ -173,7 +173,7 @@ vsce login cyclone-mind
 版本号是不可变的：`0.1.1` 发过就不能再发 `0.1.1`，先改 `package.json` 的 `version`。
 
 ```powershell
-cd jsoncrack.com\apps\vscode
+# 仓库根目录
 pnpm run vsc:package
 code --install-extension .\jsonl-vision-0.1.2.vsix   # 可选：先本地装一遍
 .\node_modules\.bin\vsce.cmd publish --packagePath .\jsonl-vision-0.1.2.vsix
@@ -217,15 +217,15 @@ Marketplace Overview = 扩展根目录 `README.md`。用户打开扩展页就会
 
 ## 9. 本仓库发版检查单
 
-优先推送与 `apps/vscode/package.json` 里 `version` 一致的 tag `v*.*.*`。仓库根目录 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 会打一次 `.vsix`，用 Marketplace Trusted Publishing（`vsce publish --oidc`，不需要 `VSCE_PAT`；job 要 `id-token: write`，且不能设 GitHub environment，因为 publisher `cyclone-mind` 的策略 `jsonl-vision release` 信任的是空 environment）发到 VS Code Marketplace，用 secret `OVSX_PAT` 发到 Open VSX，并把同一个 `.vsix` 挂到 GitHub release。`OVSX_PAT` 没配时 Open VSX 告警并跳过，Marketplace 和 GitHub release 照常。Open VSX 还要先签 Eclipse publisher agreement，并执行一次 `npx ovsx create-namespace cyclone-mind` 认领 `cyclone-mind` namespace。细节在根目录 README 的 Release。不要在这里的例子上直接 `vsce publish` 同一版本，否则 tag 工作流会因为版本已存在而失败。
+优先推送与仓库根目录 `package.json` 里 `version` 一致的 tag `v*.*.*`。仓库根目录 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 会打一次 `.vsix`，用 Marketplace Trusted Publishing（`vsce publish --oidc`，不需要 `VSCE_PAT`；job 要 `id-token: write`，且不能设 GitHub environment，因为 publisher `cyclone-mind` 的策略 `jsonl-vision release` 信任的是空 environment）发到 VS Code Marketplace，用 secret `OVSX_PAT` 发到 Open VSX，并把同一个 `.vsix` 挂到 GitHub release。`OVSX_PAT` 没配时 Open VSX 告警并跳过，Marketplace 和 GitHub release 照常。Open VSX 还要先签 Eclipse publisher agreement，并执行一次 `npx ovsx create-namespace cyclone-mind` 认领 `cyclone-mind` namespace。细节在根目录 README 的 Release。不要在这里的例子上直接 `vsce publish` 同一版本，否则 tag 工作流会因为版本已存在而失败。
 
-下面是工作流不能跑时的手工清单，对照 [`DEVELOPMENT.md`](../jsoncrack.com/apps/vscode/DEVELOPMENT.md)：
+下面是工作流不能跑时的手工清单，对照 [`DEVELOPMENT.md`](../DEVELOPMENT.md)。都在仓库根目录执行：
 
-1. 升 `apps/vscode/package.json` 的 `version`。
-2. `pnpm install --frozen-lockfile`（在 `jsoncrack.com/`）。
-3. `pnpm --filter jsoncrack-react test`
-4. `pnpm build:vscode`
-5. `apps/vscode` 里 `vsce login cyclone-mind`（PAT 只贴进隐藏提示）。
+1. 升 `package.json` 的 `version`。
+2. `pnpm install --frozen-lockfile`。
+3. `pnpm test`
+4. `pnpm run lint`
+5. `vsce login cyclone-mind`（PAT 只贴进隐藏提示）。
 6. `pnpm run vsc:package`
 7. 可选：`code --install-extension .\jsonl-vision-<version>.vsix`
 8. `vsce publish --packagePath .\jsonl-vision-<version>.vsix`

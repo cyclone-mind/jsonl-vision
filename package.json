@@ -1,0 +1,223 @@
+{
+  "name": "jsonl-vision",
+  "version": "0.3.0",
+  "displayName": "JSONL Vision: JSONL / NDJSON Graph View",
+  "description": "View and edit one JSONL, NDJSON, or JSON Lines record as a JSON Crack-style node graph. Value edits write back to the file. Agent session logs from Claude Code and Codex open as a readable view.",
+  "publisher": "cyclone-mind",
+  "license": "MIT",
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#211d1a",
+    "theme": "dark"
+  },
+  "author": {
+    "name": "JSONL Vision"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyclone-mind/jsonl-vision"
+  },
+  "bugs": {
+    "url": "https://github.com/cyclone-mind/jsonl-vision/issues"
+  },
+  "homepage": "https://github.com/cyclone-mind/jsonl-vision",
+  "categories": [
+    "Visualization",
+    "Data Science"
+  ],
+  "keywords": [
+    "jsonl",
+    "ndjson",
+    "jsonlines",
+    "json lines",
+    "json",
+    "json crack",
+    "graph",
+    "visualizer",
+    "viewer",
+    "editor",
+    "dataset",
+    "llm",
+    "claude code",
+    "codex",
+    "agent",
+    "agent logs",
+    "session",
+    "logs"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.{json,jsonl,ndjson,jsonlines}"
+  ],
+  "main": "./build/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "jsonl-vision.start",
+        "title": "Enable JSONL Vision",
+        "category": "menubar",
+        "icon": {
+          "light": "./assets/icon-light.svg",
+          "dark": "./assets/icon-dark.svg"
+        }
+      },
+      {
+        "command": "jsonl-vision.start.specific",
+        "title": "Enable JSONL Vision for specific file",
+        "category": "menubar"
+      },
+      {
+        "command": "jsonl-vision.start.selected",
+        "title": "Open with JSONL Vision",
+        "category": "Navigation"
+      },
+      {
+        "command": "jsonl-vision.toggleAgentSession",
+        "title": "Toggle Agent Session Mode",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.goToLine",
+        "title": "Go to Line",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.exportPng",
+        "title": "Export Graph as PNG",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.exportPngTransparent",
+        "title": "Export Graph as Transparent PNG",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.exportSvg",
+        "title": "Export Graph as SVG",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.copyPng",
+        "title": "Copy Graph as PNG",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.collapseAll",
+        "title": "Collapse All",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.expandAll",
+        "title": "Expand All",
+        "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.rotateLayout",
+        "title": "Rotate Layout",
+        "category": "JSONL Vision"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "jsonl-vision.start.selected",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "jsonl-vision.start",
+          "when": "never"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "jsonl-vision.start",
+          "when": "resourceExtname =~ /^\\.(json|jsonl|ndjson|jsonlines)$/i || editorLangId == json || editorLangId == jsonl",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "JSONL Vision",
+      "properties": {
+        "jsonl-vision.background": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "dark",
+            "warm"
+          ],
+          "enumDescriptions": [
+            "Follow the VS Code color theme (light or dark)",
+            "Warm dark (charcoal) background",
+            "Warm light (cream) background"
+          ],
+          "default": "auto",
+          "description": "Canvas background theme for JSONL Vision. Open panels update immediately."
+        },
+        "jsonl-vision.detectAgentSessions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect Claude Code session files and Codex CLI rollout files and open them in agent session mode. Turn this off to always graph the raw JSONL record. The Toggle Agent Session Mode command still switches the file you have open."
+        },
+        "jsonl-vision.layoutDirection": {
+          "type": "string",
+          "enum": [
+            "right",
+            "down"
+          ],
+          "enumDescriptions": [
+            "Left to right",
+            "Top to bottom"
+          ],
+          "default": "right",
+          "description": "Graph layout direction. Rotate Layout and the Top-down button update this setting for the workspace when one is open, otherwise for the user. Open panels update immediately."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node esbuild.config.mjs --production",
+    "vsc:package": "pnpm run build && vsce package --no-dependencies",
+    "build:dev": "vite build && node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "watch:webview": "vite build --watch",
+    "test": "node scripts/run-unit-tests.mjs",
+    "lint": "node scripts/lint.mjs",
+    "lint:fix": "node scripts/lint.mjs --fix",
+    "clean": "rm -rf build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/node": "^25.6.0",
+    "@types/react": "19.2.11",
+    "@types/react-dom": "19.2.3",
+    "@types/vscode": "^1.100.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vscode/vsce": "^3.9.1",
+    "esbuild": "^0.25.12",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1",
+    "vite": "^6.4.2"
+  },
+  "dependencies": {
+    "jsoncrack-react": "workspace:*",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "packageManager": "pnpm@10.20.0"
+}
