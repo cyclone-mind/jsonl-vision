@@ -8,6 +8,7 @@ ext-src/**
 scripts/**
 build/test/**
 samples/**
+assets/*.gif
 .gitignore
 .prettierignore
 .prettierrc

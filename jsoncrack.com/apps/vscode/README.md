@@ -12,9 +12,7 @@ VS Code installs from the Marketplace. Cursor, Windsurf, and VSCodium users inst
 code --install-extension cyclone-mind.jsonl-vision
 ```
 
-<!-- TODO: replace the note below with a demo GIF at an https URL. Show a JSONL line opening as a graph, the cursor moving to another record, and a value edit written back. The Marketplace does not render relative paths or SVG. -->
-
-> **Demo:** GIF placeholder — recording not added yet.
+<img alt="JSONL Vision in agent session mode: a Claude Code session steps from the user prompt to a Read tool call and its result, then a normal JSONL record" src="https://raw.githubusercontent.com/cyclone-mind/jsonl-vision/main/jsoncrack.com/apps/vscode/assets/demo.gif" width="800" />
 
 ## Features
 
@@ -80,7 +78,7 @@ an independent project, not affiliated with or endorsed by JSON Crack.
 ## Release
 
 Maintainers publish by pushing a git tag that matches `version` in this
-`package.json`. The tag `v0.2.0` runs
+`package.json`. The tag `v0.3.0` runs
 [`.github/workflows/release.yml`](https://github.com/cyclone-mind/jsonl-vision/blob/main/.github/workflows/release.yml):
 it builds one `.vsix`, publishes that file, and attaches it to the GitHub release.
 This workflow does not create the tag.
