@@ -12,9 +12,7 @@ VS Code installs from the Marketplace. Cursor, Windsurf, and VSCodium users inst
 code --install-extension cyclone-mind.jsonl-vision
 ```
 
-<!-- TODO: replace the note below with a demo GIF at an https URL. Show a JSONL line opening as a graph, the cursor moving to another record, and a value edit written back. The Marketplace does not render relative paths or SVG. -->
-
-> **Demo:** GIF placeholder — recording not added yet.
+<img alt="JSONL Vision in agent session mode: a Claude Code session steps from the user prompt to a Read tool call and its result, then a normal JSONL record" src="https://raw.githubusercontent.com/cyclone-mind/jsonl-vision/main/assets/demo.gif" width="800" />
 
 ## Features
 
@@ -25,34 +23,99 @@ code --install-extension cyclone-mind.jsonl-vision
 - **JSON Crack-style canvas** — depth-colored headers, orthogonal connectors, collapsible objects, warm dark or cream theme.
 - **`.json` too** — a plain JSON file opens as one whole-file graph.
 - **Offline** — parsing and write-back stay in the editor.
+- **Agent session logs** — Claude Code and Codex CLI transcripts open as a readable session view. See below.
 
-Changelog: [`jsoncrack.com/apps/vscode/CHANGELOG.md`](jsoncrack.com/apps/vscode/CHANGELOG.md).
+## Usage
+
+1. Open a `.jsonl`, `.ndjson`, `.jsonlines`, or `.json` file.
+2. Click the **JSONL Vision** button in the editor title bar (top right).
+3. Move the cursor between lines to open a tab per line, or use **previous / next record** (Alt+Left / Alt+Right). Double-click a value to edit it.
+4. Press Ctrl/Cmd+F (or **Find**) to search keys and values in the graph. Enter and Shift+Enter jump between matches. **Next line** and **Prev line** find the query in other JSONL records.
+5. Run **JSONL Vision: Go to Line** to open a line number.
+
+## Search
+
+**Find** (or Ctrl/Cmd+F) searches the graph that is open. Matching keys and values are highlighted. The count is the number of fields that contain the text. Enter jumps to the next match and centers its node; Shift+Enter jumps to the previous one. Escape closes the box.
+
+On a JSONL file, **Next line** and **Prev line** move to another record whose raw line contains the same text. That scan does not parse JSON. It matches the file text, so a label that exists only in agent session mode (such as `tool call`) is not a line hit unless those characters are in the line. A match inside a nested JSON string still counts, because that string is part of the line.
+
+Collapsed nodes are included in the count. Centering works when the node is on screen.
+
+## Export and layout
+
+The toolbar above the graph, and the **JSONL Vision** commands, can:
+
+- **Export PNG** or **Export transparent PNG**. The picture is the whole graph, not only the part in view, on the current theme background (or transparent). A very large graph is scaled down instead of failing, and JSONL Vision says so.
+- **Export SVG**, with the same full layout.
+- **Copy** the PNG to the clipboard when the webview can write images.
+- **Collapse all** / **Expand all**. Collapse all folds the first level of the graph.
+- **Top-down** / **Left-right**. The choice is saved in `jsonl-vision.layoutDirection` for the workspace, or for you if no folder is open.
+
+The save dialog suggests the file name plus the line, such as `events-line-3.png`. A whole `.json` file omits the line number.
+
+## Agent session logs
+
+Claude Code writes one JSON object per line under `~/.claude/projects/<project>/<session>.jsonl`. Codex CLI writes rollout files under `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Message text, tool arguments, and tool output are often buried in nested JSON strings, so the raw graph is hard to scan.
+
+JSONL Vision sniffs the first lines of a JSONL file. When they match those schemas it opens **agent session mode**:
+
+- Each record is labeled **user**, **assistant**, **tool call**, **tool result**, or **meta**, with a colored bar and a short summary (role plus the first words, or the tool name).
+- A tool call shows its name and input. A nearby tool result is inlined on that node, and a result line shows the tool name and input it answers. Pairing uses Claude `tool_use` / `tool_use_id` and Codex `call_id`.
+- String fields that contain a JSON object or array become nested nodes.
+- Previous and next record buttons (Alt+Left / Alt+Right) move to the neighboring non-empty line. The same controls are on plain JSONL files.
+- Open tabs show a short hint such as `3 · Read`.
+
+Edits still write back to that line. A value inside a parsed JSON string is written back into the string. A value copied from the paired line, a session-view label, or a shortened long string is read-only, so the file is not corrupted. Turn the mode off to graph and edit the raw record.
+
+**JSONL Vision: Toggle Agent Session Mode** forces the mode on or off for the file you have open. That override lasts until you toggle again or close the panel.
+
+### Known limitations
+
+- Detection reads only the first 40 non-empty lines. A session whose markers start later is not auto-detected; use the toggle.
+- Pairing looks at the nearest 80 records in one direction and skips a line longer than 64KB. A result far from its call is shown without its pair. Output larger than about 24KB is not copied onto the call.
+- Streaming-split Claude replies stay one graph per line. Subagent files and resumed Codex rollouts are not joined across files.
+- The view omits bulky bookkeeping (token usage, `base_instructions`, ancestry ids). Those fields stay in the file and show in raw mode.
+- Strings longer than 12,000 characters are previewed and are not editable until you turn the mode off. JSON strings are expanded only when they are an object or array under about 80KB and 150 containers.
+- A scalar edit re-serializes the line with compact `JSON.stringify`, including a JSON string you changed. Other fields' values are preserved.
+- `.json` files stay in whole-document mode. Ordinary JSONL is unchanged when it does not match these schemas and you have not toggled the mode on.
+
+## Settings
+
+| Setting                              | Values                   | Default | Description                                                                                                                                                          |
+| ------------------------------------ | ------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jsonl-vision.background`            | `auto` · `dark` · `warm` | `auto`  | Canvas background: follow the VS Code theme, warm dark (charcoal), or warm light (cream). Open panels update immediately.                                            |
+| `jsonl-vision.detectAgentSessions`   | `true` · `false`         | `true`  | Sniff Claude Code and Codex CLI session logs and open them in agent session mode. Turn off to always graph raw JSONL. The toggle command still switches the open file. |
+
+## Privacy
+
+Works **fully offline** — no data is sent anywhere.
+
+## Credits
+
+Built on the open-source graph engine from [JSON Crack](https://jsoncrack.com)
+(`packages/jsoncrack-react`, Apache-2.0) and its VS Code scaffold (MIT),
+with upstream license and copyright notices preserved (see `NOTICE.md`). JSONL Vision is
+an independent project, not affiliated with or endorsed by JSON Crack.
 
 ## Release
 
 Maintainers publish by pushing a git tag that matches `version` in
-[`jsoncrack.com/apps/vscode/package.json`](jsoncrack.com/apps/vscode/package.json).
-The tag `v0.2.0` runs [`.github/workflows/release.yml`](.github/workflows/release.yml):
+`package.json`. The tag `v0.3.0` runs
+[`.github/workflows/release.yml`](https://github.com/cyclone-mind/jsonl-vision/blob/main/.github/workflows/release.yml):
 it builds one `.vsix`, publishes that file, and attaches it to the GitHub release.
-Do not create the tag until that version is on `main`. The workflow does not publish
-anything on its own until the tag is pushed, and it does not create the tag.
+This workflow does not create the tag.
 
-The VS Code Marketplace step uses [Trusted Publishing](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publish-with-github-actions-and-trusted-publishing):
-`npx @vscode/vsce publish --packagePath <vsix> --oidc`. Publisher `cyclone-mind`
-policy `jsonl-vision release` trusts GitHub Actions in this repository, workflow
-`release.yml`, with no GitHub environment. The job has `id-token: write` and
-does not read `VSCE_PAT`. Do not add a job `environment:` — the policy's
-environment is empty, and a name would change the OIDC subject. On a private
-repository, the first successful token exchange has to happen within 48 hours
-of creating the policy or the policy does not stay active.
+The VS Code Marketplace step uses Trusted Publishing (`vsce publish --oidc`).
+Publisher `cyclone-mind` policy `jsonl-vision release` trusts this repository's
+`release.yml` workflow with no GitHub environment, so the workflow does not use
+`VSCE_PAT`. Do not add a job `environment:` or the OIDC subject will not match.
 
-Open VSX is still token-based. Add this repository secret before the first
-Open VSX publish
-([Settings → Secrets and variables → Actions](https://github.com/cyclone-mind/jsonl-vision/settings/secrets/actions)):
+Open VSX still needs a token. Add this repository secret
+([Actions secrets](https://github.com/cyclone-mind/jsonl-vision/settings/secrets/actions)):
 
-| Secret     | Registry                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `OVSX_PAT` | Open VSX access token from [open-vsx.org tokens](https://open-vsx.org/user-settings/tokens). `npx ovsx publish` reads it from the environment. |
+| Secret     | Registry                                                                          |
+| ---------- | --------------------------------------------------------------------------------- |
+| `OVSX_PAT` | Open VSX access token. `npx ovsx publish` reads it from the environment.         |
 
 If `OVSX_PAT` is missing, Open VSX publish logs a warning and is skipped. The
 Marketplace publish and the GitHub release still run.
@@ -63,39 +126,6 @@ Open VSX also requires, once per publisher:
 2. Claim the namespace: `npx ovsx create-namespace cyclone-mind` (uses `OVSX_PAT`).
 
 The `cyclone-mind` namespace must be claimed before the first Open VSX publish.
-The listing at the Open VSX link above is empty until that publish succeeds.
+The Open VSX page is empty until that publish succeeds.
 
-The extension id on both registries is `cyclone-mind.jsonl-vision`.
-
-### Local `.vsix`
-
-```sh
-cd jsoncrack.com
-pnpm install --frozen-lockfile
-pnpm --filter jsoncrack-react run build
-pnpm --filter jsonl-vision run vsc:package
-code --install-extension apps/vscode/jsonl-vision-0.2.0.vsix
-```
-
-## Layout
-
-The upstream [JSON Crack](https://jsoncrack.com) monorepo is vendored under
-[`jsoncrack.com/`](jsoncrack.com/). The parts that matter here:
-
-- [`jsoncrack.com/apps/vscode`](jsoncrack.com/apps/vscode) — the extension (host + webview).
-- [`jsoncrack.com/packages/jsoncrack-react`](jsoncrack.com/packages/jsoncrack-react) — the graph engine.
-- [`docs/adr/0001-jsonl-vision-architecture.md`](docs/adr/0001-jsonl-vision-architecture.md) — the design decisions and why.
-
-From-scratch guide (scaffold → debug → Marketplace):
-[`docs/develop-vscode-extension.md`](docs/develop-vscode-extension.md).
-
-This repo's build and release commands:
-[`jsoncrack.com/apps/vscode/DEVELOPMENT.md`](jsoncrack.com/apps/vscode/DEVELOPMENT.md).
-
-## Credits & license
-
-Built on the open-source [JSON Crack](https://jsoncrack.com) engine
-(`packages/jsoncrack-react`, Apache-2.0) and its VS Code scaffold (`apps/vscode`, MIT),
-both vendored with their license and copyright notices preserved. JSONL Vision is an
-independent project, not affiliated with or endorsed by JSON Crack. See
-[`NOTICE.md`](jsoncrack.com/apps/vscode/NOTICE.md).
+Changelog: [CHANGELOG.md](CHANGELOG.md).

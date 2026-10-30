@@ -8,11 +8,6 @@ on:
 permissions:
   contents: read
 
-# The pnpm workspace is jsoncrack.com/, not the repository root.
-defaults:
-  run:
-    working-directory: jsoncrack.com
-
 jobs:
   ci:
     name: Test, lint, and package
@@ -33,7 +28,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: jsoncrack.com/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -47,10 +42,9 @@ jobs:
       - name: Package the extension
         run: |
           set -euo pipefail
-          pnpm --filter jsoncrack-react run build
-          pnpm --filter jsonl-vision run vsc:package
-          version="$(node -p "require('./apps/vscode/package.json').version")"
-          vsix="apps/vscode/jsonl-vision-${version}.vsix"
+          pnpm run vsc:package
+          version="$(node -p "require('./package.json').version")"
+          vsix="jsonl-vision-${version}.vsix"
           if [ ! -f "$vsix" ]; then
             echo "::error::vsce package did not produce ${vsix}"
             exit 1
@@ -60,5 +54,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jsonl-vision-vsix
-          path: jsoncrack.com/apps/vscode/jsonl-vision-*.vsix
+          path: jsonl-vision-*.vsix
           if-no-files-found: error
