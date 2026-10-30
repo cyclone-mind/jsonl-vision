@@ -74,6 +74,11 @@
         "command": "jsonl-vision.toggleAgentSession",
         "title": "Toggle Agent Session Mode",
         "category": "JSONL Vision"
+      },
+      {
+        "command": "jsonl-vision.goToLine",
+        "title": "Go to Line",
+        "category": "JSONL Vision"
       }
     ],
     "menus": {

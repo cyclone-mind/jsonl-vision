@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Search the current graph (Ctrl/Cmd+F or the Find box): keys and values match case-insensitively, matches are highlighted, and Enter / Shift+Enter center the next or previous match. A count shows how many fields matched.
+- Search across JSONL lines from that box. Next and previous line scan the file text and do not parse every record.
+- **JSONL Vision: Go to Line** opens a JSONL record by line number.
+- Previous and next record (Alt+Left / Alt+Right and buttons) work on plain JSONL files as well as in agent session mode.
+
 ## 0.3.0 — 2026-10-30
 
 ### Added

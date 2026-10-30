@@ -4,7 +4,9 @@ import { HEADER_COLOR_COUNT, ROW_HEIGHT } from "../layoutConstants";
 import type { NodeData } from "../types";
 import { isPathCollapsed, useCollapseContext } from "./CollapseContext";
 import { EditableValue } from "./EditableValue";
+import { HighlightText } from "./HighlightText";
 import styles from "./Node.module.css";
+import { useSearchContext } from "./SearchContext";
 import { TextRenderer } from "./TextRenderer";
 import { getTextColor } from "./nodeStyles";
 
@@ -15,6 +17,8 @@ type ObjectNodeProps = {
 };
 
 type RowProps = {
+  nodeId: string;
+  rowIndex: number;
   row: NodeData["text"][number];
   x: number;
   y: number;
@@ -22,10 +26,12 @@ type RowProps = {
   parentPath: JSONPath;
 };
 
-const Row = ({ row, x, y, rowOffsetY, parentPath }: RowProps) => {
+const Row = ({ nodeId, rowIndex, row, x, y, rowOffsetY, parentPath }: RowProps) => {
   const height = row.height ?? ROW_HEIGHT;
   const multiline = height > ROW_HEIGHT;
   const { collapsedSet, onToggleCollapse } = useCollapseContext();
+  const search = useSearchContext();
+  const query = search.query.trim();
 
   const isContainer =
     (row.type === "object" || row.type === "array") && (row.childrenCount ?? 0) > 0;
@@ -82,12 +88,47 @@ const Row = ({ row, x, y, rowOffsetY, parentPath }: RowProps) => {
           className={styles.key}
           style={{ color: getTextColor({ type: "object", value: row.value }) }}
         >
-          {row.key}:{" "}
+          {query && row.key ? (
+            <HighlightText
+              text={`${row.key}`}
+              query={query}
+              active={
+                search.active?.nodeId === nodeId &&
+                search.active.rowIndex === rowIndex &&
+                search.active.field === "key"
+              }
+            />
+          ) : (
+            row.key
+          )}
+          {": "}
         </span>
         {valuePath ? (
           <EditableValue path={valuePath} value={row.value} valueType={row.type}>
-            <TextRenderer>{getRowText()}</TextRenderer>
+            {query && row.type !== "object" && row.type !== "array" ? (
+              <HighlightText
+                text={String(getRowText())}
+                query={query}
+                active={
+                  search.active?.nodeId === nodeId &&
+                  search.active.rowIndex === rowIndex &&
+                  search.active.field === "value"
+                }
+              />
+            ) : (
+              <TextRenderer>{getRowText()}</TextRenderer>
+            )}
           </EditableValue>
+        ) : query && row.type !== "object" && row.type !== "array" ? (
+          <HighlightText
+            text={String(getRowText())}
+            query={query}
+            active={
+              search.active?.nodeId === nodeId &&
+              search.active.rowIndex === rowIndex &&
+              search.active.field === "value"
+            }
+          />
         ) : (
           <TextRenderer>{getRowText()}</TextRenderer>
         )}
@@ -111,6 +152,8 @@ const Row = ({ row, x, y, rowOffsetY, parentPath }: RowProps) => {
 
 const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
   const parentPath = node.path ?? [];
+  const search = useSearchContext();
+  const query = search.query.trim();
   const colorSlot = (node.depth ?? 0) % HEADER_COLOR_COUNT;
   let rowOffsetY = 0;
   const rows = node.text.map((row, index) => {
@@ -119,6 +162,8 @@ const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
     return (
       <Row
         key={`${node.id}-${index}`}
+        nodeId={node.id}
+        rowIndex={index}
         row={row}
         x={x}
         y={y}
@@ -145,7 +190,19 @@ const ObjectNodeBase = ({ node, x, y }: ObjectNodeProps) => {
             color: `var(--header-fg-${colorSlot})`,
           }}
         >
-          {node.label}
+          {query ? (
+            <HighlightText
+              text={node.label}
+              query={query}
+              active={
+                search.active?.nodeId === node.id &&
+                search.active.rowIndex === -1 &&
+                search.active.field === "label"
+              }
+            />
+          ) : (
+            node.label
+          )}
         </span>
       )}
       {rows}
