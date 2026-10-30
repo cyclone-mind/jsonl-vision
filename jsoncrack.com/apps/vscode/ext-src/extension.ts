@@ -7,7 +7,7 @@ import {
   startLineTracking,
   toggleAgentSession,
 } from "./lineTracking";
-import { createWebviewPanel } from "./webview";
+import { createWebviewPanel, postToJsonlVision, rotateLayoutSetting } from "./webview";
 
 function getPanelTitle(document?: vscode.TextDocument) {
   if (!document) return "JSONL Vision";
@@ -38,8 +38,27 @@ export function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("jsonl-vision.goToLine", () =>
       goToJsonlLine(context, vscode.window.activeTextEditor)
-    )
+    ),
+    vscode.commands.registerCommand("jsonl-vision.exportPng", () => sendGraphCommand("exportPng")),
+    vscode.commands.registerCommand("jsonl-vision.exportPngTransparent", () =>
+      sendGraphCommand("exportPngTransparent")
+    ),
+    vscode.commands.registerCommand("jsonl-vision.exportSvg", () => sendGraphCommand("exportSvg")),
+    vscode.commands.registerCommand("jsonl-vision.copyPng", () => sendGraphCommand("copyPng")),
+    vscode.commands.registerCommand("jsonl-vision.collapseAll", () =>
+      sendGraphCommand("collapseAll")
+    ),
+    vscode.commands.registerCommand("jsonl-vision.expandAll", () => sendGraphCommand("expandAll")),
+    vscode.commands.registerCommand("jsonl-vision.rotateLayout", () => {
+      void rotateLayoutSetting();
+    })
   );
+}
+
+function sendGraphCommand(action: string) {
+  if (!postToJsonlVision({ type: "graphCommand", action })) {
+    void vscode.window.showInformationMessage("Open JSONL Vision to use this command.");
+  }
 }
 
 // create webview for selected text
@@ -78,7 +97,11 @@ async function createWebviewForSelectedText(context: vscode.ExtensionContext) {
 
 async function createWebviewForActiveEditor(context: vscode.ExtensionContext) {
   const editor = vscode.window.activeTextEditor;
-  const panel = createWebviewPanel(context, getPanelTitle(editor?.document));
+  const panel = createWebviewPanel(context, getPanelTitle(editor?.document), () => ({
+    fileName: editor?.document.fileName ? path.basename(editor.document.fileName) : "graph",
+    directory: editor?.document.fileName ? path.dirname(editor.document.fileName) : "",
+    line: null,
+  }));
 
   const postDocument = () => {
     panel.webview.postMessage(graphPayload(editor?.document.getText() ?? "", "document"));
@@ -107,10 +130,12 @@ async function createWebviewForActiveEditor(context: vscode.ExtensionContext) {
  */
 function createWebviewForContent(context?: vscode.ExtensionContext, content?: string): any {
   if (context && content) {
-    const panel = createWebviewPanel(
-      context,
-      getPanelTitle(vscode.window.activeTextEditor?.document)
-    );
+    const document = vscode.window.activeTextEditor?.document;
+    const panel = createWebviewPanel(context, getPanelTitle(document), () => ({
+      fileName: document?.fileName ? path.basename(document.fileName) : "selection",
+      directory: document?.fileName ? path.dirname(document.fileName) : "",
+      line: null,
+    }));
     panel.webview.postMessage(graphPayload(content, "document"));
   }
 }

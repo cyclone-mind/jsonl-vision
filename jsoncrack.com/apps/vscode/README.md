@@ -41,6 +41,18 @@ On a JSONL file, **Next line** and **Prev line** move to another record whose ra
 
 Collapsed nodes are included in the count. Centering works when the node is on screen.
 
+## Export and layout
+
+The toolbar above the graph, and the **JSONL Vision** commands, can:
+
+- **Export PNG** or **Export transparent PNG**. The picture is the whole graph, not only the part in view, on the current theme background (or transparent). A very large graph is scaled down instead of failing, and JSONL Vision says so.
+- **Export SVG**, with the same full layout.
+- **Copy** the PNG to the clipboard when the webview can write images.
+- **Collapse all** / **Expand all**. Collapse all folds the first level of the graph.
+- **Top-down** / **Left-right**. The choice is saved in `jsonl-vision.layoutDirection` for the workspace, or for you if no folder is open.
+
+The save dialog suggests the file name plus the line, such as `events-line-3.png`. A whole `.json` file omits the line number.
+
 ## Agent session logs
 
 Claude Code writes one JSON object per line under `~/.claude/projects/<project>/<session>.jsonl`. Codex CLI writes rollout files under `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Message text, tool arguments, and tool output are often buried in nested JSON strings, so the raw graph is hard to scan.
