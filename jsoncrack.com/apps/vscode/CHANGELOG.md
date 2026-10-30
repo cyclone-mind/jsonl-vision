@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Agent session mode for Claude Code session files (`~/.claude/projects/<project>/<session>.jsonl`) and Codex CLI rollout files (`~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`). The first lines are sniffed; user, assistant, tool call, tool result, and meta records are labeled, tool name and inputs are shown with a nearby paired result, and string fields that contain JSON become nested nodes. Edits inside those strings are written back re-serialized; paired values, labels, and shortened long text stay read-only. Previous/next record and a one-line summary sit on the graph. `jsonl-vision.detectAgentSessions` turns auto-detection off. **JSONL Vision: Toggle Agent Session Mode** switches the open file.
+
 ## 0.2.0
 
 ### Added

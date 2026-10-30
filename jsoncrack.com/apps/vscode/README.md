@@ -25,6 +25,7 @@ code --install-extension cyclone-mind.jsonl-vision
 - **JSON Crack-style canvas** — depth-colored headers, orthogonal connectors, collapsible objects, warm dark or cream theme.
 - **`.json` too** — a plain JSON file opens as one whole-file graph.
 - **Offline** — parsing and write-back stay in the editor.
+- **Agent session logs** — Claude Code and Codex CLI transcripts open as a readable session view. See below.
 
 ## Usage
 
@@ -32,11 +33,38 @@ code --install-extension cyclone-mind.jsonl-vision
 2. Click the **JSONL Vision** button in the editor title bar (top right).
 3. Move the cursor between lines to open a tab per line; double-click a value to edit it.
 
+## Agent session logs
+
+Claude Code writes one JSON object per line under `~/.claude/projects/<project>/<session>.jsonl`. Codex CLI writes rollout files under `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Message text, tool arguments, and tool output are often buried in nested JSON strings, so the raw graph is hard to scan.
+
+JSONL Vision sniffs the first lines of a JSONL file. When they match those schemas it opens **agent session mode**:
+
+- Each record is labeled **user**, **assistant**, **tool call**, **tool result**, or **meta**, with a colored bar and a short summary (role plus the first words, or the tool name).
+- A tool call shows its name and input. A nearby tool result is inlined on that node, and a result line shows the tool name and input it answers. Pairing uses Claude `tool_use` / `tool_use_id` and Codex `call_id`.
+- String fields that contain a JSON object or array become nested nodes.
+- Previous and next record buttons (Alt+Left / Alt+Right) move to the neighboring non-empty line.
+- Open tabs show a short hint such as `3 · Read`.
+
+Edits still write back to that line. A value inside a parsed JSON string is written back into the string. A value copied from the paired line, a session-view label, or a shortened long string is read-only, so the file is not corrupted. Turn the mode off to graph and edit the raw record.
+
+**JSONL Vision: Toggle Agent Session Mode** forces the mode on or off for the file you have open. That override lasts until you toggle again or close the panel.
+
+### Known limitations
+
+- Detection reads only the first 40 non-empty lines. A session whose markers start later is not auto-detected; use the toggle.
+- Pairing looks at the nearest 80 records in one direction and skips a line longer than 64KB. A result far from its call is shown without its pair. Output larger than about 24KB is not copied onto the call.
+- Streaming-split Claude replies stay one graph per line. Subagent files and resumed Codex rollouts are not joined across files.
+- The view omits bulky bookkeeping (token usage, `base_instructions`, ancestry ids). Those fields stay in the file and show in raw mode.
+- Strings longer than 12,000 characters are previewed and are not editable until you turn the mode off. JSON strings are expanded only when they are an object or array under about 80KB and 150 containers.
+- A scalar edit re-serializes the line with compact `JSON.stringify`, including a JSON string you changed. Other fields' values are preserved.
+- `.json` files stay in whole-document mode. Ordinary JSONL is unchanged when it does not match these schemas and you have not toggled the mode on.
+
 ## Settings
 
-| Setting                   | Values                   | Default | Description                                                                                                       |
-| ------------------------- | ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------- |
-| `jsonl-vision.background` | `auto` · `dark` · `warm` | `auto`  | Canvas background: follow the VS Code theme, warm dark (charcoal), or warm light (cream). Open panels update immediately. |
+| Setting                              | Values                   | Default | Description                                                                                                                                                          |
+| ------------------------------------ | ------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jsonl-vision.background`            | `auto` · `dark` · `warm` | `auto`  | Canvas background: follow the VS Code theme, warm dark (charcoal), or warm light (cream). Open panels update immediately.                                            |
+| `jsonl-vision.detectAgentSessions`   | `true` · `false`         | `true`  | Sniff Claude Code and Codex CLI session logs and open them in agent session mode. Turn off to always graph raw JSONL. The toggle command still switches the open file. |
 
 ## Privacy
 

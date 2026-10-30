@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyScalarEdit, readScalarEdit } from "./applyEdit";
+import { applyScalarEdit, applyWalkEdit, readScalarEdit } from "./applyEdit";
 import { normalizeDocumentLine } from "./lineText";
 
 describe("applyScalarEdit", () => {
@@ -84,6 +84,80 @@ describe("applyScalarEdit", () => {
   it("refuses invalid JSON and a path that descends through a scalar", () => {
     assert.deepEqual(applyScalarEdit("{", ["a"], 1), { ok: false, reason: "invalid-json" });
     assert.deepEqual(applyScalarEdit('{"a":1}', ["a", "b"], 1), { ok: false, reason: "bad-path" });
+  });
+});
+
+describe("applyWalkEdit", () => {
+  it("rewrites a scalar inside a JSON string and leaves sibling strings as strings", () => {
+    const line =
+      '{"payload":{"arguments":"{\\"cmd\\":\\"ls\\",\\"n\\":1}","note":"{\\"keep\\":true}","name":"shell"}}';
+    const result = applyWalkEdit(
+      line,
+      [
+        { key: "payload", parseString: false },
+        { key: "arguments", parseString: true },
+        { key: "cmd", parseString: false },
+      ],
+      "pwd"
+    );
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const parsed = JSON.parse(result.text) as {
+      payload: { arguments: string; note: string; name: string };
+    };
+    assert.equal(parsed.payload.name, "shell");
+    assert.equal(parsed.payload.note, '{"keep":true}');
+    assert.deepEqual(JSON.parse(parsed.payload.arguments), { cmd: "pwd", n: 1 });
+  });
+
+  it("updates a doubly encoded JSON string from the inside out", () => {
+    const line = '{"output":"{\\"data\\":\\"{\\\\\\"n\\\\\\":1}\\"}"}';
+    const result = applyWalkEdit(
+      line,
+      [
+        { key: "output", parseString: true },
+        { key: "data", parseString: true },
+        { key: "n", parseString: false },
+      ],
+      2
+    );
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const output = JSON.parse(JSON.parse(result.text).output);
+    assert.deepEqual(JSON.parse(output.data), { n: 2 });
+    assert.equal(typeof JSON.parse(result.text).output, "string");
+  });
+
+  it("refuses to parse a string that is not an object or to replace an object", () => {
+    assert.deepEqual(
+      applyWalkEdit(
+        '{"a":"hello"}',
+        [
+          { key: "a", parseString: true },
+          { key: "b", parseString: false },
+        ],
+        1
+      ),
+      { ok: false, reason: "bad-path" }
+    );
+    assert.deepEqual(applyWalkEdit('{"a":{"b":1}}', [{ key: "a", parseString: true }], 1), {
+      ok: false,
+      reason: "bad-path",
+    });
+  });
+
+  it("falls back to a plain path when no step is a JSON string", () => {
+    assert.deepEqual(
+      applyWalkEdit(
+        '{"a":{"b":1}}',
+        [
+          { key: "a", parseString: false },
+          { key: "b", parseString: false },
+        ],
+        4
+      ),
+      { ok: true, text: '{"a":{"b":4}}' }
+    );
   });
 });
 

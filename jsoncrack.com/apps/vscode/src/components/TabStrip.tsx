@@ -12,6 +12,10 @@ export interface TabStripTab {
   line: number;
   /** True when the document's line has diverged from the tab's cached snapshot. */
   drift: boolean;
+  /** Agent-session label, e.g. `3 · Read`. Absent in raw JSONL mode. */
+  label?: string;
+  /** Session role, used to color the pill dot. */
+  role?: string;
 }
 
 interface TabStripProps {
@@ -88,7 +92,7 @@ export function TabStrip({
             title={
               tab.drift
                 ? "This line changed in the file — refresh to sync this tab"
-                : `Line ${tab.line + 1}`
+                : (tab.label ?? `Line ${tab.line + 1}`)
             }
             onClick={() => onFocus(tab.line)}
             onContextMenu={e => {
@@ -103,8 +107,11 @@ export function TabStrip({
               }
             }}
           >
-            <span className="jsonl-tab-dot" aria-hidden="true" />
-            <span className="jsonl-tab-label">Line {tab.line + 1}</span>
+            <span
+              className={tab.role ? `jsonl-tab-dot role-${tab.role}` : "jsonl-tab-dot"}
+              aria-hidden="true"
+            />
+            <span className="jsonl-tab-label">{tab.label ?? `Line ${tab.line + 1}`}</span>
             {tab.drift && (
               <button
                 type="button"

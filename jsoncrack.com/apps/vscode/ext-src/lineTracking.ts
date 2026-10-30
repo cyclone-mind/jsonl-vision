@@ -1,9 +1,16 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import type { AgentFamily } from "./agentSessionDetect";
+import { detectAgentSession } from "./agentSessionDetect";
+import {
+  describeSessionEditFailure,
+  editRecord,
+  presentSessionLine,
+  sessionTabHint,
+} from "./agentSessionView";
 import type { PathSegment, Scalar } from "./applyEdit";
-import { applyScalarEdit } from "./applyEdit";
 import { graphPayload } from "./jsonGuard";
-import { focusLineDecision } from "./lineFocus";
+import { adjacentNonEmptyLine, focusLineDecision } from "./lineFocus";
 import type { TextChange } from "./lineShift";
 import { shiftLineNumber } from "./lineShift";
 import type { LineTabsAction, LineTabsState } from "./lineTabs";
@@ -37,6 +44,28 @@ export function startLineTracking(context: vscode.ExtensionContext, editor: vsco
   sessions.set(key, session);
 }
 
+/** Toggle agent session mode for the open panel, or for the JSONL editor in front. */
+export function toggleAgentSession(context: vscode.ExtensionContext, editor?: vscode.TextEditor) {
+  for (const session of sessions.values()) {
+    if (session.isPanelActive()) {
+      session.reveal();
+      session.toggleAgentMode();
+      return;
+    }
+  }
+
+  const target =
+    editor && isJsonlDocument(editor.document)
+      ? editor
+      : vscode.window.visibleTextEditors.find(item => isJsonlDocument(item.document));
+  if (!target) {
+    void vscode.window.showInformationMessage("Open a JSONL file to toggle agent session mode.");
+    return;
+  }
+  startLineTracking(context, target);
+  sessions.get(target.document.uri.toString())?.toggleAgentMode();
+}
+
 /**
  * Owns the webview panel and the line-anchored tab state for a single JSONL file.
  * The pure transitions live in ./lineTabs; this class is the thin vscode-facing
@@ -49,6 +78,9 @@ class LineTrackingSession {
   private readonly disposables: vscode.Disposable[] = [];
   private webviewReady = false;
   private lastFocusedLine: number | null = null;
+  /** null follows auto-detect. true/false is a manual override for this panel. */
+  private manual: boolean | null = null;
+  private detected: AgentFamily | null = null;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -85,8 +117,29 @@ class LineTrackingSession {
 
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
+    vscode.workspace.onDidChangeConfiguration(
+      event => {
+        if (!event.affectsConfiguration("jsonl-vision.detectAgentSessions")) return;
+        this.sniff();
+        this.post();
+      },
+      null,
+      this.disposables
+    );
+
+    this.sniff();
     // Focus the line the cursor is already on when tracking starts.
     this.focusLine(editor.selection.active.line);
+  }
+
+  isPanelActive(): boolean {
+    return this.panel.active;
+  }
+
+  /** Flip agent session mode for this file without changing the global setting. */
+  toggleAgentMode() {
+    this.manual = this.isAgentModeOn() ? false : true;
+    this.post();
   }
 
   reveal() {
@@ -132,6 +185,19 @@ class LineTrackingSession {
       return;
     }
 
+    if (m.type === "toggleAgentSession") {
+      this.toggleAgentMode();
+      return;
+    }
+
+    if (m.type === "navigate") {
+      const direction = (msg as { direction?: string }).direction;
+      if (direction === "prev" || direction === "next") {
+        this.navigate(direction === "next" ? 1 : -1);
+      }
+      return;
+    }
+
     if (typeof m.line !== "number") return;
     switch (m.type) {
       case "clickTab":
@@ -163,9 +229,20 @@ class LineTrackingSession {
   /** Apply a committed scalar edit to a line and write it straight back (ADR items 5-7). */
   private async applyEdit(line: number, editPath: PathSegment[], value: Scalar) {
     const original = this.lineText(line);
-    const result = applyScalarEdit(original, editPath, value);
+    const family = this.agentFamily();
+    const result = editRecord(
+      original,
+      editPath,
+      value,
+      family
+        ? { family, before: this.neighborLines(line, -1), after: this.neighborLines(line, 1) }
+        : null
+    );
     if (!result.ok) {
-      void vscode.window.showWarningMessage(describeEditFailure(result.reason));
+      const message = family
+        ? describeSessionEditFailure(result.reason)
+        : describeEditFailure(result.reason as "invalid-json" | "bad-path" | "bad-value");
+      void vscode.window.showWarningMessage(message);
       return;
     }
     if (result.text === original) return;
@@ -194,10 +271,19 @@ class LineTrackingSession {
       text: change.text,
     }));
 
+    const headTouched = mapped.some(change => change.startLine < 80 || change.endLine < 80);
+    let detectedChanged = false;
+    if (headTouched) {
+      const before = this.detected;
+      this.sniff();
+      detectedChanged = before !== this.detected;
+    }
+
     const shifted = applyLineShifts(this.state, mapped);
     const nextCursorLine =
       this.lastFocusedLine === null ? null : shiftLineNumber(this.lastFocusedLine, mapped);
-    let changed = shifted !== this.state || nextCursorLine !== this.lastFocusedLine;
+    let changed =
+      detectedChanged || shifted !== this.state || nextCursorLine !== this.lastFocusedLine;
     this.state = shifted;
     this.lastFocusedLine = nextCursorLine;
 
@@ -266,11 +352,192 @@ class LineTrackingSession {
     if (!this.webviewReady) return;
     const focusedText =
       this.state.focusedLine === null ? "" : this.lineText(this.state.focusedLine);
+    const family = this.agentFamily();
+    const payload = this.sessionPayload(focusedText, family);
     this.panel.webview.postMessage({
-      ...graphPayload(focusedText, "line"),
-      tabs: this.state.tabs,
+      json: payload.json,
+      problem: payload.problem,
+      tabs: this.state.tabs.map(tab => this.postedTab(tab.line, tab.drift, family, focusedText)),
       focusedLine: this.state.focusedLine,
+      session: payload.session,
     });
+  }
+
+  private postedTab(
+    line: number,
+    drift: boolean,
+    family: AgentFamily | "generic" | null,
+    focusedText: string
+  ) {
+    const posted: { line: number; drift: boolean; label?: string; role?: string } = { line, drift };
+    if (!family) return posted;
+    const text = line === this.state.focusedLine ? focusedText : this.lineText(line);
+    const hint = sessionTabHint(text, family);
+    if (!hint) return posted;
+    posted.label = `${line + 1} · ${hint.hint}`;
+    posted.role = hint.role;
+    return posted;
+  }
+
+  private sessionPayload(focusedText: string, family: AgentFamily | "generic" | null) {
+    const raw = graphPayload(focusedText, "line");
+    if (!family) {
+      if (this.manual === false && this.detected) {
+        return {
+          ...raw,
+          session: this.sessionChrome({
+            enabled: false,
+            resume: true,
+            family: this.detected,
+            role: "meta",
+            roleLabel: "meta",
+            summary: "Agent session mode is off",
+            lockedPaths: [],
+          }),
+        };
+      }
+      return { ...raw, session: null };
+    }
+
+    const line = this.state.focusedLine;
+    if (line === null || focusedText.trim() === "") {
+      return {
+        json: raw.json,
+        problem: raw.problem,
+        session: this.sessionChrome({
+          enabled: true,
+          resume: false,
+          family,
+          role: "meta",
+          roleLabel: "meta",
+          summary: "No record",
+          lockedPaths: [],
+        }),
+      };
+    }
+
+    let view: ReturnType<typeof presentSessionLine>;
+    try {
+      view = presentSessionLine(focusedText, family, {
+        before: this.neighborLines(line, -1),
+        after: this.neighborLines(line, 1),
+      });
+    } catch {
+      view = null;
+    }
+    if (!view) {
+      return {
+        ...raw,
+        session: this.sessionChrome({
+          enabled: true,
+          resume: false,
+          family,
+          role: "meta",
+          roleLabel: "meta",
+          summary: raw.problem ? "invalid JSON" : "record",
+          lockedPaths: [],
+        }),
+      };
+    }
+
+    const guarded = graphPayload(view.displayJson, "line");
+    return {
+      json: guarded.json,
+      problem: guarded.problem,
+      session: this.sessionChrome({
+        enabled: true,
+        resume: false,
+        family,
+        role: view.role,
+        roleLabel: view.roleLabel,
+        summary: view.summary,
+        lockedPaths: view.locks.map(lock => lock.path),
+      }),
+    };
+  }
+
+  private sessionChrome(input: {
+    enabled: boolean;
+    resume: boolean;
+    family: AgentFamily | "generic";
+    role: string;
+    roleLabel: string;
+    summary: string;
+    lockedPaths: PathSegment[][];
+  }) {
+    const line = this.state.focusedLine;
+    return {
+      ...input,
+      line,
+      lineCount: this.document.lineCount,
+      canPrev:
+        line !== null &&
+        adjacentNonEmptyLine(line, -1, this.document.lineCount, current =>
+          this.lineText(current)
+        ) !== null,
+      canNext:
+        line !== null &&
+        adjacentNonEmptyLine(line, 1, this.document.lineCount, current =>
+          this.lineText(current)
+        ) !== null,
+    };
+  }
+
+  private navigate(direction: 1 | -1) {
+    if (this.state.focusedLine === null) return;
+    const next = adjacentNonEmptyLine(
+      this.state.focusedLine,
+      direction,
+      this.document.lineCount,
+      current => this.lineText(current)
+    );
+    if (next === null) return;
+    this.focusLine(next);
+    this.revealLine(next);
+  }
+
+  private neighborLines(line: number, direction: 1 | -1): string[] {
+    const out: string[] = [];
+    // Bound the walk so a tens-of-MB file is not scanned to pair one record.
+    for (let step = 1; step <= 120 && out.length < 80; step += 1) {
+      const index = line + direction * step;
+      if (index < 0 || index >= this.document.lineCount) break;
+      const text = this.lineText(index);
+      if (!text.trim() || text.length > 64_000) continue;
+      out.push(text);
+    }
+    return out;
+  }
+
+  private isAgentModeOn(): boolean {
+    if (this.manual === true) return true;
+    if (this.manual === false) return false;
+    return this.detectEnabled() && this.detected !== null;
+  }
+
+  private agentFamily(): AgentFamily | "generic" | null {
+    if (!this.isAgentModeOn()) return null;
+    return this.detected ?? "generic";
+  }
+
+  private detectEnabled(): boolean {
+    return (
+      vscode.workspace
+        .getConfiguration("jsonl-vision")
+        .get<boolean>("detectAgentSessions", true) !== false
+    );
+  }
+
+  /** Classify the file from a bounded head. Long lines contribute only a prefix. */
+  private sniff() {
+    const head: string[] = [];
+    const last = Math.min(this.document.lineCount, 80);
+    for (let index = 0; index < last && head.length < 40; index += 1) {
+      const text = this.lineText(index);
+      if (!text.trim()) continue;
+      head.push(text.length > 64_000 ? text.slice(0, 8_000) : text);
+    }
+    this.detected = detectAgentSession(head);
   }
 
   private dispose() {

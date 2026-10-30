@@ -263,6 +263,149 @@ a {
   margin: 0;
 }
 
+/* Agent session mode. Role color sits on the bar and the open-tab dot; the
+   graph itself uses the role name (`tool_call`, `user`, …) as its root node. */
+.session-bar {
+  --session-accent: #8b93b8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  flex-shrink: 0;
+  background: color-mix(
+    in srgb,
+    var(--session-accent) 16%,
+    var(--vscode-editor-background, #1e1e1e)
+  );
+  border-bottom: 2px solid var(--session-accent);
+  color: var(--vscode-foreground, #cccccc);
+  font-family: var(--vscode-font-family, "Segoe UI", system-ui, sans-serif);
+  font-size: 12px;
+}
+
+.session-bar[data-role="user"] {
+  --session-accent: #7aa2f7;
+}
+
+.session-bar[data-role="assistant"] {
+  --session-accent: #9ece6a;
+}
+
+.session-bar[data-role="tool_call"] {
+  --session-accent: #e0a86b;
+}
+
+.session-bar[data-role="tool_result"] {
+  --session-accent: #bb9af7;
+}
+
+.session-bar[data-role="meta"],
+.session-bar[data-role="record"],
+.session-resume {
+  --session-accent: #8b93b8;
+}
+
+.session-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.session-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.session-role {
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--session-accent);
+  color: var(--session-accent);
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 10px;
+}
+
+.session-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.session-line {
+  flex-shrink: 0;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-nav,
+.session-textbtn {
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--session-accent) 55%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.session-nav {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.session-textbtn {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.session-nav:hover:not(:disabled),
+.session-textbtn:hover {
+  background: color-mix(in srgb, var(--session-accent) 22%, transparent);
+}
+
+.session-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.jsonl-tab-dot.role-user {
+  background: #7aa2f7;
+  opacity: 1;
+}
+
+.jsonl-tab-dot.role-assistant {
+  background: #9ece6a;
+  opacity: 1;
+}
+
+.jsonl-tab-dot.role-tool_call {
+  background: #e0a86b;
+  opacity: 1;
+}
+
+.jsonl-tab-dot.role-tool_result {
+  background: #bb9af7;
+  opacity: 1;
+}
+
+.jsonl-tab-dot.role-meta,
+.jsonl-tab-dot.role-record {
+  background: #8b93b8;
+  opacity: 1;
+}
+
 .jsonl-modal-code {
   margin: 0;
   padding: 10px 12px;
